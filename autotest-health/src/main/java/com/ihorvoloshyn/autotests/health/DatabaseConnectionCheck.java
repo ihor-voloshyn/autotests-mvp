@@ -2,19 +2,64 @@ package com.ihorvoloshyn.autotests.health;
 
 import com.ihorvoloshyn.autotests.db.JdbcClient;
 
+import java.util.Objects;
+import java.util.function.Supplier;
+
 public final class DatabaseConnectionCheck implements ConnectionCheck {
     private final String name;
-    private final JdbcClient client;
-    public DatabaseConnectionCheck(String name, JdbcClient client){
-        if(name==null||name.isBlank())throw new IllegalArgumentException("name must not be blank");
-        if(client==null)throw new IllegalArgumentException("client must not be null");
-        this.name=name;this.client=client;
+    private final Supplier<JdbcClient> clientSupplier;
+    private volatile JdbcClient client;
+
+    public DatabaseConnectionCheck(String name, JdbcClient client) {
+        this(name, () -> client);
     }
-    public ConnectionCheckResult check(){
-        long start=System.nanoTime();
-        if(!client.isValid(5))return ConnectionCheckResult.failure(name,"JDBC connection validation failed",elapsed(start));
-        if(!client.isSchemaAccessible())return ConnectionCheckResult.failure(name,"Configured database schema is not accessible",elapsed(start));
-        return ConnectionCheckResult.success(name,"JDBC connection and configured schema are accessible",elapsed(start));
+
+    public DatabaseConnectionCheck(String name, Supplier<JdbcClient> clientSupplier) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("name must not be blank");
+        }
+        this.name = name;
+        this.clientSupplier = Objects.requireNonNull(clientSupplier, "clientSupplier must not be null");
     }
-    private static long elapsed(long start){return(System.nanoTime()-start)/1_000_000;}
+
+    @Override
+    public ConnectionCheckResult check() {
+        long start = System.nanoTime();
+        try {
+            JdbcClient current = client;
+            if (current == null) {
+                synchronized (this) {
+                    current = client;
+                    if (current == null) {
+                        current = Objects.requireNonNull(
+                                clientSupplier.get(),
+                                "clientSupplier returned null");
+                        client = current;
+                    }
+                }
+            }
+
+            if (!current.isValid(5)) {
+                return ConnectionCheckResult.failure(
+                        name, "JDBC connection validation failed", elapsed(start));
+            }
+            if (!current.isSchemaAccessible()) {
+                return ConnectionCheckResult.failure(
+                        name, "Configured database schema is not accessible", elapsed(start));
+            }
+            return ConnectionCheckResult.success(
+                    name,
+                    "JDBC connection and configured schema are accessible",
+                    elapsed(start));
+        } catch (Exception e) {
+            return ConnectionCheckResult.failure(
+                    name,
+                    e.getClass().getSimpleName() + ": " + e.getMessage(),
+                    elapsed(start));
+        }
+    }
+
+    private static long elapsed(long start) {
+        return (System.nanoTime() - start) / 1_000_000;
+    }
 }
