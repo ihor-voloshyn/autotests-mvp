@@ -11,5 +11,10 @@
     <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-camunda</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-messaging</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-infrastructure</artifactId><version>${project.version}</version></dependency>
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 </project>
