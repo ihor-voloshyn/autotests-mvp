@@ -2,10 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.ihorvoloshyn.autotests</groupId>
-  <artifactId>client-income-confirmation-nbu-autotest</artifactId>
+  <artifactId>autotest-framework</artifactId>
   <version>0.1.0-SNAPSHOT</version>
   <packaging>pom</packaging>
-  <name>Client Income Confirmation NBU Autotest</name>
+  <name>Reusable Autotest Framework</name>
   <modules>
     <module>autotest-core</module><module>autotest-rest</module><module>autotest-soap</module>
     <module>autotest-vault</module><module>autotest-db</module><module>autotest-camunda</module><module>autotest-health</module><module>autotest-messaging</module>
