@@ -3,6 +3,8 @@ package com.ihorvoloshyn.autotests.base;
 import com.ihorvoloshyn.autotests.camunda.CamundaClient;
 import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
 import com.ihorvoloshyn.autotests.rest.RestClient;
+import com.ihorvoloshyn.autotests.vault.AuthenticatedVaultClient;
+import com.ihorvoloshyn.autotests.vault.BasicAuthVaultAuthenticator;
 import com.ihorvoloshyn.autotests.vault.VaultClient;
 
 public final class TestContext {
@@ -22,10 +24,19 @@ public final class TestContext {
         this.camunda = new CamundaClient(
                 config.property("camunda.base-url", config.baseUrl()));
 
-        String vaultToken = config.property("vault.token", "");
-        this.vault = vaultToken.isBlank()
-                ? null
-                : new VaultClient(config.vaultUrl(), vaultToken);
+        String username = config.property("vault.username", "");
+        String password = config.property("vault.password", "");
+        String authPath = config.property("vault.auth.path", "");
+
+        if (username.isBlank() || authPath.isBlank()) {
+            this.vault = null;
+        } else {
+            BasicAuthVaultAuthenticator authenticator =
+                    new BasicAuthVaultAuthenticator(
+                            config.vaultUrl(), authPath, username, password);
+            this.vault = new AuthenticatedVaultClient(
+                    config.vaultUrl(), authenticator).authenticate();
+        }
     }
 
     public FrameworkConfig config() {
@@ -43,7 +54,7 @@ public final class TestContext {
     public VaultClient vault() {
         if (vault == null) {
             throw new IllegalStateException(
-                    "Vault is not configured. Set vault.token through environment configuration.");
+                    "Vault is not configured. Set vault.auth.path and Vault credentials.");
         }
         return vault;
     }
