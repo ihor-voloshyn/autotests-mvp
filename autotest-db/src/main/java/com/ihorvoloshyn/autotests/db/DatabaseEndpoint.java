@@ -1,5 +1,9 @@
 package com.ihorvoloshyn.autotests.db;
 
+import com.ihorvoloshyn.autotests.core.config.Credentials;
+import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
+import com.ihorvoloshyn.autotests.core.config.SecretResolver;
+
 public record DatabaseEndpoint(
         DatabaseType type,
         String host,
@@ -17,6 +21,28 @@ public record DatabaseEndpoint(
         if (schema == null || schema.isBlank()) throw new IllegalArgumentException("database schema is required");
         username = username == null ? "" : username;
         password = password == null ? "" : password;
+    }
+
+    public static DatabaseEndpoint from(FrameworkConfig config, String prefix, DatabaseType type, SecretResolver secrets) {
+        if (config == null) throw new IllegalArgumentException("config must not be null");
+        if (prefix == null || prefix.isBlank()) throw new IllegalArgumentException("prefix must not be blank");
+        if (type == null) throw new IllegalArgumentException("database type must not be null");
+        if (secrets == null) throw new IllegalArgumentException("secrets must not be null");
+
+        String usernameKey = config.property(prefix + ".username-key", prefix + ".username");
+        String passwordKey = config.property(prefix + ".password-key", prefix + ".password");
+        Credentials credentials = new Credentials(secrets.resolve(usernameKey), secrets.resolve(passwordKey));
+
+        String portValue = config.property(prefix + ".port", "");
+        Integer port = portValue.isBlank() ? null : Integer.valueOf(portValue);
+        return new DatabaseEndpoint(
+                type,
+                config.requiredProperty(prefix + ".host"),
+                port,
+                config.requiredProperty(prefix + ".database"),
+                config.requiredProperty(prefix + ".schema"),
+                credentials.username(),
+                credentials.password());
     }
 
     public int effectivePort() { return port == null ? (type == DatabaseType.POSTGRESQL ? 5432 : 1521) : port; }
