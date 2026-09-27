@@ -49,9 +49,24 @@ public final class ConnectionFactory {
     }
 
     public RabbitMqClient rabbitMq(String prefix, SecretResolver secrets) {
-        ServiceConfig service = ServiceConfig.from(config, prefix, prefix, secrets);
+        String url = config.property(prefix + ".url", "");
+        if (url.isBlank()) {
+            url = config.requiredProperty(prefix + ".endpoint");
+        }
+        String usernameKey = configuredKey(prefix + ".username-key", prefix + ".username");
+        String passwordKey = configuredKey(prefix + ".password-key", prefix + ".password");
+        Credentials credentials = new Credentials(secrets.resolve(usernameKey), secrets.resolve(passwordKey));
         String virtualHost = config.property(prefix + ".virtual-host", "/");
-        return new RabbitMqClient(service.endpoint(), service.username(), service.password(), virtualHost);
+        return new RabbitMqClient(
+                com.ihorvoloshyn.autotests.core.endpoint.EndpointResolver.resolve(url),
+                credentials.username(),
+                credentials.password(),
+                virtualHost);
+    }
+
+    private String configuredKey(String key, String fallback) {
+        String value = config.property(key, "");
+        return value.isBlank() ? fallback : value;
     }
 
     public VaultClient vault(String prefix) {
