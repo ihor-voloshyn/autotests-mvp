@@ -33,7 +33,7 @@ public class CamundaProcessClient {
 
     public Response startProcess(String processKey, Map<String, Object> variables) {
         return io.restassured.RestAssured.given()
-                .baseUri(getBaseUrl())
+                .baseUri(client.baseUrl())
                 .contentType("application/json")
                 .body(Map.of(
                         "variables",
