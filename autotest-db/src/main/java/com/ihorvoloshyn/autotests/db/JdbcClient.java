@@ -31,7 +31,7 @@ public class JdbcClient implements AutoCloseable {
     }
 
     private static String quoteIdentifier(String identifier) {
-        return """ + identifier.replace(""", """") + """;
+        return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
 
     public List<Map<String,Object>> query(String sql, Object... parameters) {
@@ -59,7 +59,10 @@ public class JdbcClient implements AutoCloseable {
                 case POSTGRESQL -> "SELECT current_schema()";
                 case ORACLE -> "SELECT SYS_CONTEXT('USERENV','CURRENT_SCHEMA') FROM dual";
             };
-            return !query(sql).isEmpty();
+            List<Map<String, Object>> rows = query(sql);
+            if (rows.isEmpty()) return false;
+            Object value = rows.get(0).values().stream().findFirst().orElse(null);
+            return value != null && endpoint.schema().equalsIgnoreCase(value.toString());
         } catch (RuntimeException e) { return false; }
     }
 
