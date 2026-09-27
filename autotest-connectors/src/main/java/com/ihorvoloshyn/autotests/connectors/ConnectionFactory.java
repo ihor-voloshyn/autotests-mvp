@@ -25,7 +25,7 @@ public final class ConnectionFactory {
         this.config = config;
     }
 
-    public RestClient rest(String prefix) {
+    public RestClient rest() {\n        return new RestClient(config.baseUrl());\n    }\n\n    public CamundaClient camunda() {\n        String url = config.property("camunda.url", config.property("camunda.base-url", config.baseUrl()));\n        return new CamundaClient(url);\n    }\n\n    public RestClient rest(String prefix) {
         return rest(prefix, SecretResolver.fromMap(config.properties()));
     }
 
