@@ -8,7 +8,7 @@
   <name>Client Income Confirmation NBU Autotest</name>
   <modules>
     <module>autotest-core</module><module>autotest-rest</module><module>autotest-soap</module>
-    <module>autotest-vault</module><module>autotest-db</module><module>autotest-camunda</module>
+    <module>autotest-vault</module><module>autotest-db</module><module>autotest-camunda</module><module>autotest-health</module>
     <module>autotest-infrastructure</module><module>autotest-reporting</module><module>autotest-tests</module>
   </modules>
   <properties>
