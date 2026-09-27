@@ -8,5 +8,8 @@
     <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-core</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-vault</artifactId><version>${project.version}</version></dependency>
     <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-db</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-camunda</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-messaging</artifactId><version>${project.version}</version></dependency>
+    <dependency><groupId>com.ihorvoloshyn.autotests</groupId><artifactId>autotest-infrastructure</artifactId><version>${project.version}</version></dependency>
   </dependencies>
 </project>
