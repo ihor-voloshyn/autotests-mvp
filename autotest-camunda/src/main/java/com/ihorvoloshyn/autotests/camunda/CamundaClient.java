@@ -14,7 +14,7 @@ public class CamundaClient {
         this.baseUrl = baseUrl.replaceAll("/+$", "");
     }
 
-    public Response get(String path) {
+    String baseUrl() {\n        return baseUrl;\n    }\n\n    public Response get(String path) {
         return RestAssured.given()
                 .baseUri(baseUrl)
                 .get(path);
