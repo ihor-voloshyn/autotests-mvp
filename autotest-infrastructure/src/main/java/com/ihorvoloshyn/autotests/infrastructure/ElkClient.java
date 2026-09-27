@@ -17,6 +17,23 @@ public class ElkClient {
         this.endpoint=endpoint; this.authorization=authorization;
     }
     private String baseUrl(){return endpoint.toUri().toString().replaceAll("/+$","");}
+    public int healthStatus() {
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(baseUrl() + "/_cluster/health"))
+                    .header("Accept", "application/json")
+                    .GET()
+                    .build();
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            return response.statusCode();
+        } catch (IOException e) {
+            throw new IllegalStateException("Cannot call ELK health endpoint", e);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("ELK health request interrupted", e);
+        }
+    }
+
     public String search(String index,String queryJson){
         if(index==null||index.isBlank())throw new IllegalArgumentException("index must not be blank");
         if(queryJson==null||queryJson.isBlank())throw new IllegalArgumentException("queryJson must not be blank");
