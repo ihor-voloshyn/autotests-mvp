@@ -19,12 +19,13 @@ class ConnectionHealthTest {
     void allConfiguredConnectionsAreHealthy() {
         FrameworkConfig config = new EnvironmentConfigLoader().load();
         List<ConnectionCheck> checks = new ArrayList<>();
+        SecretResolver secrets = buildSecrets(config);
 
         addHttp(checks, config, "health.rest.url", "REST");
         addSoap(checks, config);
         addVault(checks, config);
-        addDatabase(checks, config, "health.postgresql", DatabaseType.POSTGRESQL);
-        addDatabase(checks, config, "health.oracle", DatabaseType.ORACLE);
+        addDatabase(checks, config, "health.postgresql", DatabaseType.POSTGRESQL, secrets);
+        addDatabase(checks, config, "health.oracle", DatabaseType.ORACLE, secrets);
         addCamunda(checks, config);
         addRabbitMq(checks, config);
         addElk(checks, config);
@@ -50,6 +51,25 @@ class ConnectionHealthTest {
                 .toList();
 
         assertTrue(failures.isEmpty(), () -> "Connection health failures: " + failures);
+    }
+
+    private static SecretResolver buildSecrets(FrameworkConfig config) {
+        SecretResolver configResolver = new ConfigurationSecretResolver(config);
+        String url = config.property("health.vault.url", "");
+        String authPath = config.property("health.vault.auth.path", "");
+        String user = config.property("health.vault.username", "");
+        String path = config.property("health.vault.check.path", "");
+        String mount = config.property("health.vault.mount", "secret");
+        VaultKvVersion version = VaultKvVersion.valueOf(
+                config.property("health.vault.kv-version", "KV2").toUpperCase());
+        if (url.isBlank() || authPath.isBlank() || user.isBlank() || path.isBlank()) return configResolver;
+
+        VaultAuthenticator auth = new BasicAuthVaultAuthenticator(url, authPath, user,
+                config.property("health.vault.password", ""));
+        VaultClient client = new AuthenticatedVaultClient(url, auth).authenticate();
+        SecretResolver vaultResolver = new VaultSecretResolver(
+                new VaultSecretStore(client, mount, version), path);
+        return new CompositeSecretResolver(List.of(configResolver, vaultResolver));
     }
 
     private static void addHttp(List<ConnectionCheck> checks, FrameworkConfig c, String key, String name) {
@@ -80,7 +100,8 @@ class ConnectionHealthTest {
         checks.add(new VaultConnectionCheck(client, path));
     }
 
-    private static void addDatabase(List<ConnectionCheck> checks, FrameworkConfig c, String prefix, DatabaseType type) {
+    private static void addDatabase(List<ConnectionCheck> checks, FrameworkConfig c, String prefix,
+                                    DatabaseType type, SecretResolver secrets) {
         String host = c.property(prefix + ".host", "");
         String database = c.property(prefix + ".database", "");
         String schema = c.property(prefix + ".schema", "");
@@ -88,9 +109,7 @@ class ConnectionHealthTest {
         if (host.isBlank() || database.isBlank() || schema.isBlank()) {
             throw new IllegalStateException(prefix + " requires host, database and schema");
         }
-        int port = Integer.parseInt(c.property(prefix + ".port", type == DatabaseType.POSTGRESQL ? "5432" : "1521"));
-        DatabaseEndpoint endpoint = new DatabaseEndpoint(type, host, port, database, schema,
-                c.property(prefix + ".username", ""), c.property(prefix + ".password", ""));
+        DatabaseEndpoint endpoint = DatabaseEndpoint.from(c, prefix, type, secrets);
         checks.add(new DatabaseConnectionCheck(type.name(), DatabaseClientFactory.create(endpoint)));
     }
 
