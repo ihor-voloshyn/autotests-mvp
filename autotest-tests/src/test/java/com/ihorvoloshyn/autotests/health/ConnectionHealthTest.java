@@ -64,11 +64,13 @@ class ConnectionHealthTest {
                 config.property("health.vault.kv-version", "KV2").toUpperCase());
         if (url.isBlank() || authPath.isBlank() || user.isBlank() || path.isBlank()) return configResolver;
 
-        VaultAuthenticator auth = new BasicAuthVaultAuthenticator(url, authPath, user,
-                config.property("health.vault.password", ""));
-        VaultClient client = new AuthenticatedVaultClient(url, auth).authenticate();
-        SecretResolver vaultResolver = new VaultSecretResolver(
-                new VaultSecretStore(client, mount, version), path);
+        SecretResolver vaultResolver = new LazySecretResolver(() -> {
+            VaultAuthenticator auth = new BasicAuthVaultAuthenticator(url, authPath, user,
+                    config.property("health.vault.password", ""));
+            VaultClient client = new AuthenticatedVaultClient(url, auth).authenticate();
+            return new VaultSecretResolver(
+                    new VaultSecretStore(client, mount, version), path);
+        });
         return new CompositeSecretResolver(List.of(configResolver, vaultResolver));
     }
 
