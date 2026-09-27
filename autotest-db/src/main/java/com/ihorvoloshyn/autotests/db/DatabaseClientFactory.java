@@ -1,29 +1,16 @@
 package com.ihorvoloshyn.autotests.db;
 
 public final class DatabaseClientFactory {
+    private DatabaseClientFactory() {}
 
-    private DatabaseClientFactory() {
-    }
-
-    public static JdbcClient create(
-            DatabaseType type,
-            String host,
-            int port,
-            String database,
-            String username,
-            String password) {
-
-        if (type == null) {
-            throw new IllegalArgumentException("database type must not be null");
-        }
-
-        String url = switch (type) {
-            case POSTGRESQL ->
-                    "jdbc:postgresql://" + host + ":" + port + "/" + database;
-            case ORACLE ->
-                    "jdbc:oracle:thin:@//" + host + ":" + port + "/" + database;
+    public static JdbcClient create(DatabaseEndpoint endpoint) {
+        if (endpoint == null) throw new IllegalArgumentException("endpoint must not be null");
+        String host = endpoint.host().contains(":") && !endpoint.host().startsWith("[")
+                ? "[" + endpoint.host() + "]" : endpoint.host();
+        String url = switch (endpoint.type()) {
+            case POSTGRESQL -> "jdbc:postgresql://" + host + ":" + endpoint.effectivePort() + "/" + endpoint.database();
+            case ORACLE -> "jdbc:oracle:thin:@//" + host + ":" + endpoint.effectivePort() + "/" + endpoint.database();
         };
-
-        return new JdbcClient(url, username, password);
+        return new JdbcClient(url, endpoint.username(), endpoint.password(), endpoint);
     }
 }
