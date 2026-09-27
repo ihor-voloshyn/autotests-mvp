@@ -107,7 +107,7 @@ class ConnectionHealthTest {
             return;
         }
 
-        checks.add(new VaultConnectionCheck(factory.vault("health.vault"), path));
+        checks.add(new VaultConnectionCheck(() -> factory.vault("health.vault"), path));
     }
 
     private static void addDatabase(
@@ -131,7 +131,7 @@ class ConnectionHealthTest {
 
         checks.add(new DatabaseConnectionCheck(
                 type.name(),
-                factory.database(prefix, type, secrets)));
+                () -> factory.database(prefix, type, secrets)));
     }
 
     private static void addCamunda(List<ConnectionCheck> checks, ConnectionFactory factory, FrameworkConfig c) {
