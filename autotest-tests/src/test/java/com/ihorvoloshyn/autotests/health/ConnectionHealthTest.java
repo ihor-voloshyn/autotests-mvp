@@ -1,11 +1,13 @@
 package com.ihorvoloshyn.autotests.health;
 
+import com.ihorvoloshyn.autotests.camunda.CamundaClient;
+import com.ihorvoloshyn.autotests.connectors.ConnectionFactory;
 import com.ihorvoloshyn.autotests.core.config.*;
-import com.ihorvoloshyn.autotests.db.*;
+import com.ihorvoloshyn.autotests.db.DatabaseType;
 import com.ihorvoloshyn.autotests.infrastructure.CommandExecutor;
-import com.ihorvoloshyn.autotests.messaging.RabbitMqClient;
 import com.ihorvoloshyn.autotests.reporting.AllureSupport;
-import com.ihorvoloshyn.autotests.vault.*;
+import com.ihorvoloshyn.autotests.vault.VaultClient;
+import com.ihorvoloshyn.autotests.vault.VaultKvVersion;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -18,17 +20,19 @@ class ConnectionHealthTest {
     @Test
     void allConfiguredConnectionsAreHealthy() {
         FrameworkConfig config = new EnvironmentConfigLoader().load();
+        ConnectionFactory factory = new ConnectionFactory(config);
         List<ConnectionCheck> checks = new ArrayList<>();
+
         SecretResolver secrets = buildSecrets(config);
 
-        addHttp(checks, config, "health.rest.url", "REST");
+        addRest(checks, factory, config);
         addSoap(checks, config);
-        addVault(checks, config);
-        addDatabase(checks, config, "health.postgresql", DatabaseType.POSTGRESQL, secrets);
-        addDatabase(checks, config, "health.oracle", DatabaseType.ORACLE, secrets);
-        addCamunda(checks, config);
-        addRabbitMq(checks, config);
-        addElk(checks, config);
+        addVault(checks, factory, config);
+        addDatabase(checks, factory, config, "health.postgresql", DatabaseType.POSTGRESQL, secrets);
+        addDatabase(checks, factory, config, "health.oracle", DatabaseType.ORACLE, secrets);
+        addCamunda(checks, factory, config);
+        addRabbitMq(checks, factory, config, secrets);
+        addElk(checks, factory, config, secrets);
         addOkd(checks, config);
 
         if (checks.isEmpty()) {
@@ -62,83 +66,113 @@ class ConnectionHealthTest {
         String mount = config.property("health.vault.mount", "secret");
         VaultKvVersion version = VaultKvVersion.valueOf(
                 config.property("health.vault.kv-version", "KV2").toUpperCase());
-        if (url.isBlank() || authPath.isBlank() || user.isBlank() || path.isBlank()) return configResolver;
+
+        if (url.isBlank() || authPath.isBlank() || user.isBlank() || path.isBlank()) {
+            return configResolver;
+        }
 
         SecretResolver vaultResolver = new LazySecretResolver(() -> {
-            VaultAuthenticator auth = new BasicAuthVaultAuthenticator(url, authPath, user,
-                    config.property("health.vault.password", ""));
-            VaultClient client = new AuthenticatedVaultClient(url, auth).authenticate();
-            return new VaultSecretResolver(
-                    new VaultSecretStore(client, mount, version), path);
+            ConnectionFactory factory = new ConnectionFactory(config);
+            VaultClient client = factory.vault("health.vault");
+            return new com.ihorvoloshyn.autotests.vault.VaultSecretResolver(
+                    new com.ihorvoloshyn.autotests.vault.VaultSecretStore(client, mount, version), path);
         });
+
         return new CompositeSecretResolver(List.of(configResolver, vaultResolver));
     }
 
-    private static void addHttp(List<ConnectionCheck> checks, FrameworkConfig c, String key, String name) {
-        String url = c.property(key, "");
-        if (!url.isBlank()) checks.add(new HttpConnectionCheck(name, url));
-    }
-
-    private static void addSoap(List<ConnectionCheck> checks, FrameworkConfig c) {
-        String url = c.property("health.soap.url", "");
+    private static void addRest(List<ConnectionCheck> checks, ConnectionFactory factory, FrameworkConfig c) {
+        String url = c.property("health.rest.url", "");
         if (!url.isBlank()) {
-            String wsdl = c.property("health.soap.wsdl-path", "?wsdl");
-            checks.add(new SoapConnectionCheck(join(url, wsdl),
-                    c.property("health.soap.username", ""),
-                    c.property("health.soap.password", "")));
+            checks.add(new HttpConnectionCheck("REST", url));
         }
     }
 
-    private static void addVault(List<ConnectionCheck> checks, FrameworkConfig c) {
+    private static void addSoap(List<ConnectionCheck> checks, FrameworkConfig factoryConfig) {
+        String url = factoryConfig.property("health.soap.url", "");
+        if (!url.isBlank()) {
+            String wsdl = factoryConfig.property("health.soap.wsdl-path", "?wsdl");
+            checks.add(new SoapConnectionCheck(join(url, wsdl),
+                    factoryConfig.property("health.soap.username", ""),
+                    factoryConfig.property("health.soap.password", "")));
+        }
+    }
+
+    private static void addVault(List<ConnectionCheck> checks, ConnectionFactory factory, FrameworkConfig c) {
         String url = c.property("health.vault.url", "");
         String authPath = c.property("health.vault.auth.path", "");
         String user = c.property("health.vault.username", "");
-        if (url.isBlank() || authPath.isBlank() || user.isBlank()) return;
         String path = c.property("health.vault.check.path", "");
-        if (path.isBlank()) return;
-        VaultAuthenticator auth = new BasicAuthVaultAuthenticator(url, authPath, user,
-                c.property("health.vault.password", ""));
-        VaultClient client = new AuthenticatedVaultClient(url, auth).authenticate();
-        checks.add(new VaultConnectionCheck(client, path));
+        if (url.isBlank() || authPath.isBlank() || user.isBlank() || path.isBlank()) {
+            return;
+        }
+
+        checks.add(new VaultConnectionCheck(factory.vault("health.vault"), path));
     }
 
-    private static void addDatabase(List<ConnectionCheck> checks, FrameworkConfig c, String prefix,
-                                    DatabaseType type, SecretResolver secrets) {
+    private static void addDatabase(
+            List<ConnectionCheck> checks,
+            ConnectionFactory factory,
+            FrameworkConfig c,
+            String prefix,
+            DatabaseType type,
+            SecretResolver secrets) {
+
         String host = c.property(prefix + ".host", "");
         String database = c.property(prefix + ".database", "");
         String schema = c.property(prefix + ".schema", "");
-        if (host.isBlank() && database.isBlank() && schema.isBlank()) return;
+
+        if (host.isBlank() && database.isBlank() && schema.isBlank()) {
+            return;
+        }
         if (host.isBlank() || database.isBlank() || schema.isBlank()) {
             throw new IllegalStateException(prefix + " requires host, database and schema");
         }
-        DatabaseEndpoint endpoint = DatabaseEndpoint.from(c, prefix, type, secrets);
-        checks.add(new DatabaseConnectionCheck(type.name(), DatabaseClientFactory.create(endpoint)));
+
+        checks.add(new DatabaseConnectionCheck(
+                type.name(),
+                factory.database(prefix, type, secrets)));
     }
 
-    private static void addCamunda(List<ConnectionCheck> checks, FrameworkConfig c) {
+    private static void addCamunda(List<ConnectionCheck> checks, ConnectionFactory factory, FrameworkConfig c) {
         String url = c.property("health.camunda.url", "");
-        if (!url.isBlank()) checks.add(new CamundaConnectionCheck(
-                new com.ihorvoloshyn.autotests.camunda.CamundaClient(url)));
-    }
-
-    private static void addRabbitMq(List<ConnectionCheck> checks, FrameworkConfig c) {
-        String endpoint = c.property("health.rabbitmq.endpoint", "");
-        if (!endpoint.isBlank()) {
-            checks.add(new RabbitMqConnectionCheck(new RabbitMqClient(endpoint,
-                    c.property("health.rabbitmq.username", ""),
-                    c.property("health.rabbitmq.password", ""),
-                    c.property("health.rabbitmq.virtual-host", "/")));
+        if (!url.isBlank()) {
+            CamundaClient client = factory.camunda("health.camunda");
+            checks.add(new CamundaConnectionCheck(client));
         }
     }
 
-    private static void addElk(List<ConnectionCheck> checks, FrameworkConfig c) {
+    private static void addRabbitMq(
+            List<ConnectionCheck> checks,
+            ConnectionFactory factory,
+            FrameworkConfig c,
+            SecretResolver secrets) {
+
+        String endpoint = c.property("health.rabbitmq.endpoint", "");
+        if (!endpoint.isBlank()) {
+            checks.add(new RabbitMqConnectionCheck(
+                    factory.rabbitMq("health.rabbitmq", secrets)));
+        }
+    }
+
+    private static void addElk(
+            List<ConnectionCheck> checks,
+            ConnectionFactory factory,
+            FrameworkConfig c,
+            SecretResolver secrets) {
+
         String url = c.property("health.elk.url", "");
-        if (!url.isBlank()) checks.add(new ElkConnectionCheck(url));
+        if (!url.isBlank()) {
+            checks.add(new ElkConnectionCheck(
+                    factory.elk("health.elk", secrets)));
+        }
     }
 
     private static void addOkd(List<ConnectionCheck> checks, FrameworkConfig c) {
         String namespace = c.property("health.okd.namespace", "");
-        if (!namespace.isBlank()) checks.add(new OkdConnectionCheck(new CommandExecutor(), namespace));
+        if (!namespace.isBlank()) {
+            checks.add(new OkdConnectionCheck(new CommandExecutor(), namespace));
+        }
     }
 
     private static String join(String url, String path) {
