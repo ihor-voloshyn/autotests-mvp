@@ -29,8 +29,8 @@ public record DatabaseEndpoint(
         if (type == null) throw new IllegalArgumentException("database type must not be null");
         if (secrets == null) throw new IllegalArgumentException("secrets must not be null");
 
-        String usernameKey = config.property(prefix + ".username-key", prefix + ".username");
-        String passwordKey = config.property(prefix + ".password-key", prefix + ".password");
+        String usernameKey = configuredKey(config, prefix + ".username-key", prefix + ".username");
+        String passwordKey = configuredKey(config, prefix + ".password-key", prefix + ".password");
         Credentials credentials = new Credentials(secrets.resolve(usernameKey), secrets.resolve(passwordKey));
 
         String portValue = config.property(prefix + ".port", "");
@@ -43,6 +43,11 @@ public record DatabaseEndpoint(
                 config.requiredProperty(prefix + ".schema"),
                 credentials.username(),
                 credentials.password());
+    }
+
+    private static String configuredKey(FrameworkConfig config, String key, String fallback) {
+        String value = config.property(key, "");
+        return value.isBlank() ? fallback : value;
     }
 
     public int effectivePort() { return port == null ? (type == DatabaseType.POSTGRESQL ? 5432 : 1521) : port; }
