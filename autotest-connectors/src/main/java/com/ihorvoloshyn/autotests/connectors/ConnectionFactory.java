@@ -19,6 +19,8 @@ import com.ihorvoloshyn.autotests.vault.VaultClient;
 
 public final class ConnectionFactory {
     private final FrameworkConfig config;
+    private final java.util.concurrent.ConcurrentHashMap<String, VaultClient> vaultClients =
+            new java.util.concurrent.ConcurrentHashMap<>();
 
     public ConnectionFactory(FrameworkConfig config) {
         if (config == null) throw new IllegalArgumentException("config must not be null");
@@ -70,6 +72,13 @@ public final class ConnectionFactory {
     }
 
     public VaultClient vault(String prefix) {
+        if (prefix == null || prefix.isBlank()) {
+            throw new IllegalArgumentException("prefix must not be blank");
+        }
+        return vaultClients.computeIfAbsent(prefix, this::authenticateVault);
+    }
+
+    private VaultClient authenticateVault(String prefix) {
         String url = config.requiredProperty(prefix + ".url");
         String authPath = config.requiredProperty(prefix + ".auth.path");
         Credentials credentials = new Credentials(
