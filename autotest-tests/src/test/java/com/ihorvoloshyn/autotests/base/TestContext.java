@@ -112,8 +112,10 @@ public final class TestContext {
         if (!isVaultConfigured()) {
             return configResolver;
         }
-        return new CompositeSecretResolver(List.of(
-                configResolver,
-                vaultSecrets(mount, path, version)));
+
+        SecretResolver lazyVault = new LazySecretResolver(
+                () -> vaultSecrets(mount, path, version));
+
+        return new CompositeSecretResolver(List.of(configResolver, lazyVault));
     }
 }
