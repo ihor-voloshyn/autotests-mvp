@@ -33,7 +33,10 @@ public final class EnvironmentConfigLoader implements ConfigLoader {
         }
 
         Map<String, String> values = new HashMap<>();
-        properties.forEach((key, value) -> values.put(key.toString(), value.toString()));
+        properties.forEach((key, value) -> values.put(key.toString(), resolve(value.toString())));
+
+        // Environment variables override application.properties.
+        System.getenv().forEach((key, value) -> values.put(toPropertyKey(key), value));
 
         return new FrameworkConfig(
                 Environment.from(value(values, "test.environment", "TEST")),
@@ -41,6 +44,24 @@ public final class EnvironmentConfigLoader implements ConfigLoader {
                 value(values, "soap.base-url", "http://localhost"),
                 value(values, "vault.url", "http://localhost:8200"),
                 values);
+    }
+
+    private static String resolve(String value) {
+        if (value == null) {
+            return null;
+        }
+        if (value.startsWith("${") && value.endsWith("}")) {
+            String expression = value.substring(2, value.length() - 1);
+            int separator = expression.indexOf(':');
+            String variable = separator >= 0 ? expression.substring(0, separator) : expression;
+            String fallback = separator >= 0 ? expression.substring(separator + 1) : "";
+            return System.getenv().getOrDefault(variable, fallback);
+        }
+        return value;
+    }
+
+    private static String toPropertyKey(String environmentName) {
+        return environmentName.toLowerCase().replace('_', '.');
     }
 
     private static String value(Map<String, String> values, String key, String fallback) {
