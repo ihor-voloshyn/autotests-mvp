@@ -11,31 +11,24 @@ public final class SoapClientFactory {
     private SoapClientFactory() {}
 
     public static <T> T create(Class<T> serviceClass, String endpoint, String username, String password) {
-        if (serviceClass == null) {
-            throw new IllegalArgumentException("serviceClass must not be null");
-        }
+        if (serviceClass == null) throw new IllegalArgumentException("serviceClass must not be null");
         var resolved = EndpointResolver.resolve(endpoint);
-        if (resolved.scheme() == null) {
-            throw new IllegalArgumentException("SOAP endpoint must include a URL scheme");
-        }
+        if (resolved.scheme() == null) throw new IllegalArgumentException("SOAP endpoint must include a URL scheme");
         return create(serviceClass, resolved, username, password);
     }
 
-    public static <T> T create(
-            Class<T> serviceClass,
-            ConnectionEndpoint endpoint,
-            String username,
-            String password) {
-        if (serviceClass == null) {
-            throw new IllegalArgumentException("serviceClass must not be null");
-        }
+    public static <T> T create(Class<T> serviceClass, ConnectionEndpoint endpoint, String username, String password) {
+        if (serviceClass == null) throw new IllegalArgumentException("serviceClass must not be null");
         if (endpoint == null || endpoint.scheme() == null) {
             throw new IllegalArgumentException("SOAP endpoint must include a URL scheme");
         }
 
+        ConnectionEndpoint resolved = endpoint.withDefaultPort(
+                "https".equalsIgnoreCase(endpoint.scheme()) ? 443 : 80);
+
         JaxWsProxyFactoryBean factory = new JaxWsProxyFactoryBean();
         factory.setServiceClass(serviceClass);
-        factory.setAddress(endpoint.toUri().toString());
+        factory.setAddress(resolved.toUri().toString());
 
         @SuppressWarnings("unchecked")
         T proxy = (T) factory.create();
@@ -48,7 +41,6 @@ public final class SoapClientFactory {
             policy.setAuthorizationType("Basic");
             client.getRequestContext().put(AuthorizationPolicy.class.getName(), policy);
         }
-
         return proxy;
     }
 }
