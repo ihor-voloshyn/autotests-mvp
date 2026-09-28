@@ -1,0 +1,430 @@
+# История чата — разработка Autotest Framework
+
+Дата сохранения: 2026-09-29
+
+## Назначение
+
+Этот каталог хранит рабочую историю решений и требований, сформированных в чате при разработке репозитория `ihor-voloshyn/autotests-mvp`.
+
+Проект сейчас **не привязан к конкретному бизнес-проекту**. Цель — полноценный переиспользуемый Java/Maven framework для автоматизации тестирования сервисов и процессов.
+
+## Основные требования
+
+- Java 21
+- Maven
+- JUnit 5
+- REST Assured для REST
+- Apache CXF для SOAP
+- Basic Authentication
+- Vault
+- PostgreSQL JDBC
+- Oracle JDBC
+- Camunda REST
+- RabbitMQ
+- OKD / `oc`
+- Tomcat
+- ELK / Elasticsearch
+- Allure
+- многомодульная архитектура
+- возможность последующего подключения Spring Boot, если это будет оправдано архитектурой
+
+## Архитектура
+
+Текущие Maven-модули:
+
+- `autotest-core`
+- `autotest-rest`
+- `autotest-soap`
+- `autotest-vault`
+- `autotest-db`
+- `autotest-camunda`
+- `autotest-health`
+- `autotest-messaging`
+- `autotest-infrastructure`
+- `autotest-reporting`
+- `autotest-connectors`
+- `autotest-tests`
+
+Корневой artifact: `autotest-framework`, версия `0.1.0-SNAPSHOT`.
+
+## Важное архитектурное решение
+
+Framework должен оставаться generic.
+
+В него не должны попадать:
+
+- бизнесовые endpoint'ы конкретного проекта;
+- конкретные Camunda process key;
+- бизнесовые таблицы БД;
+- конкретные тестовые сценарии;
+- client-income-confirmation и другие project-specific сущности.
+
+Такая логика должна находиться в проектах-потребителях framework.
+
+## Endpoint model
+
+Введена универсальная модель `ConnectionEndpoint` и `EndpointResolver`.
+
+Поддерживаются:
+
+- hostname;
+- IPv4;
+- IPv6;
+- URL со scheme;
+- endpoint с портом;
+- endpoint без порта.
+
+Примеры:
+
+- `example.com`
+- `example.com:8080`
+- `10.20.30.40`
+- `10.20.30.40:8080`
+- `[2001:db8::10]`
+- `[2001:db8::10]:8443`
+- `https://example.com/api`
+- `https://example.com:8443/api`
+
+## Default ports
+
+Если порт не задан, framework назначает default по типу соединения:
+
+| Тип | Default |
+|---|---:|
+| HTTP | 80 |
+| HTTPS | 443 |
+| SOAP HTTP | 80 |
+| SOAP HTTPS | 443 |
+| Vault | 8200 |
+| PostgreSQL | 5432 |
+| Oracle | 1521 |
+| Camunda | 8143 |
+| Elasticsearch / ELK | 9200 |
+| RabbitMQ | 5672 |
+| RabbitMQ TLS | 5671 |
+
+Явно указанный порт всегда имеет приоритет.
+
+Отдельно зафиксировано решение пользователя: **Camunda использует default port 8143**.
+
+## Database
+
+Для БД schema является обязательным параметром.
+
+Модель:
+
+`DatabaseEndpoint`:
+
+- type;
+- host;
+- port;
+- database/service name;
+- schema — mandatory;
+- username;
+- password.
+
+Поддерживаются PostgreSQL и Oracle.
+
+Default:
+
+- PostgreSQL — 5432;
+- Oracle — 1521.
+
+Проверка schema должна выполняться как часть health check.
+
+## Vault
+
+Требуемый flow:
+
+1. Basic Authentication в Vault.
+2. Получение Vault token.
+3. Последующие запросы выполняются с полученным token.
+4. Token используется для получения конфигурации и credentials.
+5. Поддерживаются KV v1 и KV v2.
+6. Тесты framework не должны зависеть от конкретной версии KV.
+
+Компоненты:
+
+- `VaultAuthenticator`
+- `BasicAuthVaultAuthenticator`
+- `VaultToken`
+- `VaultClient`
+- `VaultSecretProvider`
+- `VaultSecretStore`
+- `VaultSecretResolver`
+- `AuthenticatedVaultClient`
+
+KV endpoints:
+
+- KV1: `/v1/<mount>/<path>`
+- KV2: `/v1/<mount>/data/<path>`
+
+Default Vault port: 8200.
+
+## REST
+
+`RestClient` построен на REST Assured.
+
+Поддерживает:
+
+- base URL;
+- base path;
+- GET;
+- query parameters;
+- Basic Authentication;
+- HTTP/HTTPS default ports.
+
+Добавлены локальные тесты через Java `HttpServer`, без внешнего сервиса.
+
+## SOAP
+
+SOAP построен на Apache CXF.
+
+`SoapClientFactory`:
+
+- принимает JAX-WS service class;
+- принимает endpoint;
+- поддерживает Basic Auth;
+- использует default 80/443;
+- сохраняет явно заданный порт.
+
+Для health check WSDL проверяется через HTTP.
+
+## Camunda
+
+`CamundaClient` использует generic endpoint.
+
+Default port: **8143**.
+
+Проверяется отсутствие scheme и корректность default/explicit port.
+
+## RabbitMQ
+
+`RabbitMqClient` использует RabbitMQ Java client.
+
+Поддерживаются:
+
+- AMQP;
+- AMQPS;
+- username/password;
+- virtual host;
+- TLS для AMQPS;
+- default port 5672;
+- default TLS port 5671.
+
+## ELK / Elasticsearch
+
+`ElkClient` поддерживает:
+
+- cluster health;
+- search;
+- Basic Authorization;
+- default port 9200.
+
+## OKD
+
+`OkdClient` работает через `oc`:
+
+- получение pod list/status;
+- получение logs;
+- restart pod через удаление pod;
+- проверка exit code команды.
+
+Команды выполняются через generic `CommandExecutor`.
+
+## Connection Health Checks
+
+Предусмотрена единая модель:
+
+```
+ConnectionCheck
+  ├── HttpConnectionCheck
+  ├── SoapConnectionCheck
+  ├── VaultConnectionCheck
+  ├── DatabaseConnectionCheck
+  ├── CamundaConnectionCheck
+  ├── RabbitMqConnectionCheck
+  ├── ElkConnectionCheck
+  └── OkdConnectionCheck
+```
+
+Результат:
+
+- success/failure;
+- message;
+- exception при наличии.
+
+`ConnectionHealthService` агрегирует результаты и превращает exceptions/null results в failure.
+
+Целевой запуск:
+
+```
+mvn test -Dtest=ConnectionHealthTest
+```
+
+Health checks должны интегрироваться с Allure.
+
+## Configuration
+
+Есть:
+
+- `FrameworkConfig`
+- `Configuration`
+- `ConfigLoader`
+- `EnvironmentConfigLoader`
+- `SecretResolver`
+
+Конфигурация поддерживает properties и environment variables.
+
+Secrets могут разрешаться:
+
+1. из локальной configuration;
+2. через Vault при необходимости.
+
+Vault подключается лениво, чтобы создание `TestContext` не требовало доступности Vault.
+
+## Unified ConnectionFactory
+
+`autotest-connectors` содержит `ConnectionFactory`.
+
+Factory уже умеет создавать:
+
+- REST client;
+- Camunda client;
+- ELK client;
+- JDBC client;
+- RabbitMQ client;
+- Vault client;
+- SOAP client.
+
+Цель — дать потребляющим проектам единый способ получать подключения, не зная деталей создания клиентов.
+
+## TestContext / BaseTest
+
+`TestContext` хранит:
+
+- FrameworkConfig;
+- ConnectionFactory;
+- lazy clients;
+- secret resolution.
+
+`BaseTest` загружает EnvironmentConfigLoader и создаёт TestContext.
+
+## Testing strategy
+
+Для framework-тестов предпочтительно:
+
+- локальный HTTP server;
+- mock/stub;
+- unit tests;
+- проверка endpoint parsing;
+- проверка default ports;
+- проверка credentials;
+- проверка validation.
+
+Не следует делать обязательными внешние подключения к реальным:
+
+- Vault;
+- DB;
+- RabbitMQ;
+- ELK;
+- OKD;
+- Camunda.
+
+Реальные подключения должны выполняться только отдельными integration/health tests при наличии конфигурации.
+
+## CI
+
+GitHub Actions:
+
+- checkout;
+- Java 21 Temurin;
+- Maven cache;
+- `mvn -B verify`.
+
+CI должен оставаться зелёным после каждого логического этапа.
+
+## Последние зафиксированные изменения
+
+- Исправлен default Camunda port на 8143.
+- Добавлены тесты Camunda default/explicit port.
+- Реализована Vault Basic Auth → token → KV1/KV2 модель.
+- Добавлены VaultClient tests.
+- Добавлены BasicAuthVaultAuthenticator tests.
+- Добавлены REST client tests.
+- Реализованы ELK health tests.
+- Добавлены ELK default-port tests.
+- Реализованы endpoint tests для hostname/IPv4/IPv6/URL.
+- Для DB schema сделана mandatory.
+- Добавлены DB default ports.
+- Реализован единый ConnectionFactory.
+- Добавлен ConnectionHealthService.
+
+## История важных решений
+
+### 1. Generic framework вместо конкретного проекта
+
+Пользователь явно уточнил:
+
+> «мы пока не привязываемся ни к какому проекту, сейчас цель полноценный фреймворк»
+
+Это является текущим главным архитектурным ограничением.
+
+### 2. Endpoint может быть URL или host/IP
+
+Пользователь уточнил:
+
+> «подключение может происходить как по урлу, так и по IP, как с указанием порта, так и без»
+
+После этого введена универсальная endpoint-модель.
+
+### 3. Default ports
+
+Пользователь запросил:
+
+> «задай дефолтные порты, если они не заданы, в зависимости от типа соединения»
+
+Default ports стали частью framework, а не отдельных project-specific конфигураций.
+
+### 4. Camunda
+
+Пользователь отдельно исправил:
+
+> «камунда 8143»
+
+Поэтому default для Camunda — 8143.
+
+### 5. Database schema
+
+Пользователь указал:
+
+> «для баз данных обязательное указание схемы»
+
+Schema обязательна для DatabaseEndpoint.
+
+### 6. Vault authentication
+
+Пользователь определил:
+
+> «у волта базовая аутентификация для получения токена, а затем по токену можно получить конфиги и креды»
+
+И отдельно:
+
+> «на волте есть kv1 и kv2»
+
+Поэтому Vault authentication и secret retrieval разделены.
+
+## Текущая точка продолжения
+
+Следующая работа должна продолжаться как развитие generic framework.
+
+При команде пользователя «продолжай» нужно:
+
+1. проверить состояние последнего CI;
+2. исправить найденные ошибки;
+3. завершить RabbitMQ connection health/default-port tests;
+4. завершить остальные health checks;
+5. улучшать архитектуру без привязки к бизнес-проекту;
+6. после каждого существенного этапа проверять CI;
+7. сохранять новые архитектурные решения в этот каталог истории.
+
