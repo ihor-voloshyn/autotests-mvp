@@ -439,3 +439,20 @@ Schema обязательна для DatabaseEndpoint.
 8. Улучшать архитектуру без привязки к бизнес-проекту.
 9. После каждого существенного этапа проверять CI.
 10. Новые решения сохранять в этот каталог истории.
+
+
+## Последнее продолжение
+
+Добавлены:
+- `RabbitMqClientTest` — default 5672/5671, TLS, explicit ports, validation;
+- `RabbitMqConnectionCheckTest`;
+- `SoapConnectionCheckTest`;
+- `VaultConnectionCheckTest`;
+- `CamundaConnectionCheckTest`;
+- `OkdConnectionCheckTest`.
+
+При проверке CI обнаружены и исправлены две проблемы тестов:
+- нестабильная проверка query string из-за недетерминированного порядка `Map.of()`;
+- неоднозначный `null` при перегрузке конструкторов `RabbitMqClient`.
+
+На момент последней проверки CI runs 43–45 находятся в работе; предыдущие runs 41–42 были красными по указанным тестовым причинам.
