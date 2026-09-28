@@ -77,7 +77,7 @@ class DatabaseConnectionCheckTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new DatabaseConnectionCheck("", () -> new StubDatabase(true, true)));
         assertThrows(NullPointerException.class,
-                () -> new DatabaseConnectionCheck("DB", null));
+                () -> new DatabaseConnectionCheck("DB", (java.util.function.Supplier<com.ihorvoloshyn.autotests.db.DatabaseHealthClient>) null));
     }
 
     private record StubDatabase(boolean valid, boolean schemaAccessible)
