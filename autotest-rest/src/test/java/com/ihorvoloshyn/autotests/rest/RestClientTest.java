@@ -42,14 +42,17 @@ class RestClientTest {
         server = startServer(exchange -> {
             assertEquals("/search", exchange.getRequestURI().getPath());
             assertEquals("q=java&page=2", exchange.getRequestURI().getRawQuery());
-            exchange.sendResponseHeaders(204, -1);
+            byte[] body = "ok".getBytes(StandardCharsets.UTF_8);
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
             exchange.close();
         });
 
         var response = new RestClient(baseUrl("")).get(
                 "/search", Map.of("q", "java", "page", 2));
 
-        assertEquals(204, response.statusCode());
+        assertEquals(200, response.statusCode());
+        assertEquals("ok", response.asString());
     }
 
     @Test
