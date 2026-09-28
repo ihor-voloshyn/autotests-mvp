@@ -16,7 +16,7 @@ public class CamundaClient {
         if (endpoint == null || endpoint.scheme() == null) {
             throw new IllegalArgumentException("Camunda endpoint must include a URL scheme");
         }
-        this.endpoint = endpoint.withDefaultPort(8080);
+        this.endpoint = endpoint.withDefaultPort(8143);
     }
 
     String baseUrl() {
