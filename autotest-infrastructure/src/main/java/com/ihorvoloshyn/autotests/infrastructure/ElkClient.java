@@ -26,7 +26,7 @@ public class ElkClient {
         if (endpoint == null || endpoint.scheme() == null) {
             throw new IllegalArgumentException("ELK endpoint must include a URL scheme");
         }
-        this.endpoint = endpoint;
+        this.endpoint = endpoint.withDefaultPort(9200);
         this.authorization = authorization;
     }
 
@@ -44,8 +44,7 @@ public class ElkClient {
 
         try {
             HttpResponse<String> response = httpClient.send(
-                    builder.build(),
-                    HttpResponse.BodyHandlers.ofString());
+                    builder.build(), HttpResponse.BodyHandlers.ofString());
             return response.statusCode();
         } catch (IOException e) {
             throw new IllegalStateException("Cannot call ELK health endpoint", e);
@@ -56,12 +55,8 @@ public class ElkClient {
     }
 
     public String search(String index, String queryJson) {
-        if (index == null || index.isBlank()) {
-            throw new IllegalArgumentException("index must not be blank");
-        }
-        if (queryJson == null || queryJson.isBlank()) {
-            throw new IllegalArgumentException("queryJson must not be blank");
-        }
+        if (index == null || index.isBlank()) throw new IllegalArgumentException("index must not be blank");
+        if (queryJson == null || queryJson.isBlank()) throw new IllegalArgumentException("queryJson must not be blank");
 
         HttpRequest.Builder builder = HttpRequest.newBuilder()
                 .uri(URI.create(baseUrl() + "/" + index + "/_search"))
@@ -72,8 +67,7 @@ public class ElkClient {
 
         try {
             HttpResponse<String> response = httpClient.send(
-                    builder.build(),
-                    HttpResponse.BodyHandlers.ofString());
+                    builder.build(), HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() / 100 != 2) {
                 throw new IllegalStateException(
@@ -84,7 +78,7 @@ public class ElkClient {
             throw new IllegalStateException("Cannot call ELK", e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new IllegalStateException("ELK request interrupted", e);
+            throw new IllegalStateException("ELK search request interrupted", e);
         }
     }
 
