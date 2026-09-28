@@ -80,7 +80,8 @@ class ConnectionFactoryTest {
 
         assertEquals(DatabaseType.POSTGRESQL, endpoint.type());
         assertEquals("10.20.30.40", endpoint.host());
-        assertEquals(5432, endpoint.port());
+        assertNull(endpoint.port());
+        assertEquals(5432, endpoint.portOr(5432));
         assertEquals("testdb", endpoint.database());
         assertEquals("client", endpoint.schema());
     }
