@@ -456,3 +456,35 @@ Schema обязательна для DatabaseEndpoint.
 - неоднозначный `null` при перегрузке конструкторов `RabbitMqClient`.
 
 На момент последней проверки CI runs 43–45 находятся в работе; предыдущие runs 41–42 были красными по указанным тестовым причинам.
+
+
+## Продолжение после Database Health Check
+
+CI run #52 для commit `75302598d598ab0406e41c35ee0f03a6a352ef23` завершился **success**.
+
+Исправлена проблема компиляции `DatabaseConnectionCheckTest`: overloaded constructors делали `null` неоднозначным. В тесте добавлен явный тип `Supplier<DatabaseHealthClient>`.
+
+Database health architecture теперь включает:
+- generic `DatabaseHealthClient`;
+- JDBC implementation через `JdbcClient`;
+- проверку JDBC connection;
+- обязательную schema;
+- проверку доступности schema;
+- lazy creation клиента;
+- unit tests без реальной БД.
+
+### Reporting / Allure
+
+`autotest-reporting` расширен generic API:
+- `AllureSupport.step(String, Runnable)`;
+- `AllureSupport.step(String, Supplier<T>)`;
+- `AllureSupport.parameter(String, String)`;
+- существующие text/json attachments сохранены.
+
+Добавлены unit tests для execution/result/validation/null handling.
+
+Reporting остаётся generic и не содержит бизнесовой логики.
+
+### Текущая следующая задача
+
+Продолжить проверку и укрепление публичного API `ConnectionFactory`, затем улучшать конфигурацию и интеграцию health/reporting. Framework по-прежнему не должен содержать project-specific business logic.
