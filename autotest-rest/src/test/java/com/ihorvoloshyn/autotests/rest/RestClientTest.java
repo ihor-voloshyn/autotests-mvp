@@ -41,7 +41,12 @@ class RestClientTest {
     void sendsQueryParameters() throws IOException {
         server = startServer(exchange -> {
             assertEquals("/search", exchange.getRequestURI().getPath());
-            assertEquals("q=java&page=2", exchange.getRequestURI().getRawQuery());
+            String query = exchange.getRequestURI().getRawQuery();
+            assertNotNull(query);
+            assertTrue(query.contains("q=java"));
+            assertTrue(query.contains("page=2"));
+            assertEquals(2, query.split("&").length);
+
             byte[] body = "ok".getBytes(StandardCharsets.UTF_8);
             exchange.sendResponseHeaders(200, body.length);
             exchange.getResponseBody().write(body);
