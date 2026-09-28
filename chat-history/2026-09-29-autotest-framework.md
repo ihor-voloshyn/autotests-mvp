@@ -111,9 +111,7 @@ Framework должен оставаться generic.
 
 Для БД schema является обязательным параметром.
 
-Модель:
-
-`DatabaseEndpoint`:
+Модель `DatabaseEndpoint`:
 
 - type;
 - host;
@@ -190,6 +188,14 @@ SOAP построен на Apache CXF.
 
 Для health check WSDL проверяется через HTTP.
 
+Добавлен локальный `SoapConnectionCheckTest` для:
+
+- успешного HTTP ответа;
+- Basic Auth;
+- ошибки 500;
+- недоступного endpoint;
+- validation пустого URL.
+
 ## Camunda
 
 `CamundaClient` использует generic endpoint.
@@ -211,6 +217,17 @@ Default port: **8143**.
 - TLS для AMQPS;
 - default port 5672;
 - default TLS port 5671.
+
+Добавлены unit tests для:
+
+- default 5672;
+- default 5671 для AMQPS;
+- TLS;
+- explicit AMQP/AMQPS ports;
+- endpoint без scheme;
+- validation null endpoint.
+
+`RabbitMqConnectionCheck` проверяет реальное AMQP-соединение, но unit test использует недоступный localhost port и не требует внешнего RabbitMQ.
 
 ## ELK / Elasticsearch
 
@@ -252,9 +269,11 @@ ConnectionCheck
 
 - success/failure;
 - message;
-- exception при наличии.
+- duration.
 
 `ConnectionHealthService` агрегирует результаты и превращает exceptions/null results в failure.
+
+Добавлены локальные tests для HTTP, SOAP, Vault, ELK и RabbitMQ health checks.
 
 Целевой запуск:
 
@@ -344,21 +363,15 @@ GitHub Actions:
 
 CI должен оставаться зелёным после каждого логического этапа.
 
-## Последние зафиксированные изменения
+В процессе работы обнаружено:
 
-- Исправлен default Camunda port на 8143.
-- Добавлены тесты Camunda default/explicit port.
-- Реализована Vault Basic Auth → token → KV1/KV2 модель.
-- Добавлены VaultClient tests.
-- Добавлены BasicAuthVaultAuthenticator tests.
-- Добавлены REST client tests.
-- Реализованы ELK health tests.
-- Добавлены ELK default-port tests.
-- Реализованы endpoint tests для hostname/IPv4/IPv6/URL.
-- Для DB schema сделана mandatory.
-- Добавлены DB default ports.
-- Реализован единый ConnectionFactory.
-- Добавлен ConnectionHealthService.
+- commit `7892a0d` имел зелёный CI;
+- следующий REST test commit временно падал из-за нестабильного `204` ответа локального `HttpServer`;
+- тест изменён на стабильный `200 + body`;
+- RabbitMQ test сначала не компилировался из-за неоднозначного `null` между двумя конструкторами;
+- добавлен явный cast `(String) null`.
+
+После последнего исправления новый CI run должен подтвердить итоговое состояние.
 
 ## История важных решений
 
@@ -416,15 +429,13 @@ Schema обязательна для DatabaseEndpoint.
 
 ## Текущая точка продолжения
 
-Следующая работа должна продолжаться как развитие generic framework.
-
-При команде пользователя «продолжай» нужно:
-
-1. проверить состояние последнего CI;
-2. исправить найденные ошибки;
-3. завершить RabbitMQ connection health/default-port tests;
-4. завершить остальные health checks;
-5. улучшать архитектуру без привязки к бизнес-проекту;
-6. после каждого существенного этапа проверять CI;
-7. сохранять новые архитектурные решения в этот каталог истории.
-
+1. Дождаться/проверить CI после RabbitMQ test fix.
+2. Если CI красный — исправить причину до следующего функционального этапа.
+3. Завершить покрытие health-check компонентов.
+4. Проверить DatabaseConnectionCheck и schema behavior.
+5. Проверить Camunda/OKD health checks.
+6. Улучшить Allure/reporting integration.
+7. Проверить `ConnectionFactory` как единый публичный API framework.
+8. Улучшать архитектуру без привязки к бизнес-проекту.
+9. После каждого существенного этапа проверять CI.
+10. Новые решения сохранять в этот каталог истории.
