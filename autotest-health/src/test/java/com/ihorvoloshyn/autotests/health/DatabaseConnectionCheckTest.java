@@ -18,7 +18,7 @@ class DatabaseConnectionCheckTest {
         assertTrue(result.success());
         assertEquals("PostgreSQL", result.name());
         assertTrue(result.message().contains("schema"));
-        assertTrue(result.durationMillis() >= 0);
+        assertTrue(result.durationMs() >= 0);
     }
 
     @Test
