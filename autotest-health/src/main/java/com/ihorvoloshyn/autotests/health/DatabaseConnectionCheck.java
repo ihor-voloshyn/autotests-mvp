@@ -1,5 +1,6 @@
 package com.ihorvoloshyn.autotests.health;
 
+import com.ihorvoloshyn.autotests.db.DatabaseHealthClient;
 import com.ihorvoloshyn.autotests.db.JdbcClient;
 
 import java.util.Objects;
@@ -7,14 +8,14 @@ import java.util.function.Supplier;
 
 public final class DatabaseConnectionCheck implements ConnectionCheck {
     private final String name;
-    private final Supplier<JdbcClient> clientSupplier;
-    private volatile JdbcClient client;
+    private final Supplier<? extends DatabaseHealthClient> clientSupplier;
+    private volatile DatabaseHealthClient client;
 
     public DatabaseConnectionCheck(String name, JdbcClient client) {
         this(name, () -> client);
     }
 
-    public DatabaseConnectionCheck(String name, Supplier<JdbcClient> clientSupplier) {
+    public DatabaseConnectionCheck(String name, Supplier<? extends DatabaseHealthClient> clientSupplier) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("name must not be blank");
         }
@@ -26,7 +27,7 @@ public final class DatabaseConnectionCheck implements ConnectionCheck {
     public ConnectionCheckResult check() {
         long start = System.nanoTime();
         try {
-            JdbcClient current = client;
+            DatabaseHealthClient current = client;
             if (current == null) {
                 synchronized (this) {
                     current = client;
