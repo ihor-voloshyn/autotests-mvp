@@ -15,60 +15,42 @@ class ConnectionFactoryTest {
 
     @Test
     void createsRestClientFromConfiguration() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
                 Map.of("service.url", "https://example.com:8443/api"));
-
         assertNotNull(new ConnectionFactory(config).rest("service"));
     }
 
     @Test
     void createsRestClientUsingSecretResolver() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
-                Map.of(
-                        "service.url", "https://example.com:8443/api",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("service.url", "https://example.com:8443/api",
                         "service.username-key", "service-user",
                         "service.password-key", "service-password"));
-
-        var secrets = SecretResolver.fromMap(Map.of(
-                "service-user", "user",
-                "service-password", "password"));
-
+        var secrets = SecretResolver.fromMap(Map.of("service-user", "user", "service-password", "password"));
         assertNotNull(new ConnectionFactory(config).rest("service", secrets));
     }
 
     @Test
     void createsCamundaClientFromConfiguredUrl() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
                 Map.of("camunda.url", "http://10.20.30.40:8080"));
-
         assertNotNull(new ConnectionFactory(config).camunda());
     }
 
     @Test
     void createsElkClientWithCredentials() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
-                Map.of(
-                        "elk.url", "https://10.20.30.40:9200",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("elk.url", "https://10.20.30.40:9200",
                         "elk.username-key", "elk-user",
                         "elk.password-key", "elk-password"));
-
-        SecretResolver secrets = SecretResolver.fromMap(Map.of(
-                "elk-user", "user",
-                "elk-password", "password"));
-
+        SecretResolver secrets = SecretResolver.fromMap(Map.of("elk-user", "user", "elk-password", "password"));
         assertNotNull(new ConnectionFactory(config).elk("elk", secrets));
     }
 
     @Test
-    void databaseConfigurationPreservesMandatorySchema() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
-                Map.of(
-                        "db.host", "10.20.30.40",
+    void databaseConfigurationAssignsMandatorySchemaAndDefaultPort() {
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("db.host", "10.20.30.40",
                         "db.database", "testdb",
                         "db.schema", "client",
                         "db.username", "user",
@@ -80,44 +62,35 @@ class ConnectionFactoryTest {
 
         assertEquals(DatabaseType.POSTGRESQL, endpoint.type());
         assertEquals("10.20.30.40", endpoint.host());
-        assertNull(endpoint.port());
-        assertEquals(5432, endpoint.port() == null ? 5432 : endpoint.port());
+        assertEquals(5432, endpoint.port());
         assertEquals("testdb", endpoint.database());
         assertEquals("client", endpoint.schema());
     }
 
     @Test
     void createsRabbitMqClientFromUrl() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
-                Map.of(
-                        "rabbit.url", "amqps://10.20.30.40:5671",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("rabbit.url", "amqps://10.20.30.40:5671",
                         "rabbit.username", "user",
                         "rabbit.password", "password"));
-
         assertNotNull(new ConnectionFactory(config)
                 .rabbitMq("rabbit", SecretResolver.fromMap(config.properties())));
     }
 
     @Test
     void createsRabbitMqClientFromEndpointAlias() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
-                Map.of(
-                        "rabbit.endpoint", "10.20.30.40:5672",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("rabbit.endpoint", "10.20.30.40:5672",
                         "rabbit.username", "user",
                         "rabbit.password", "password"));
-
         assertNotNull(new ConnectionFactory(config)
                 .rabbitMq("rabbit", SecretResolver.fromMap(config.properties())));
     }
 
     @Test
     void rejectsNullRabbitMqSecretResolver() {
-        FrameworkConfig config = new FrameworkConfig(
-                Environment.TEST, "", "", "",
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
                 Map.of("rabbit.url", "amqp://10.20.30.40:5672"));
-
         assertThrows(IllegalArgumentException.class,
                 () -> new ConnectionFactory(config).rabbitMq("rabbit", null));
     }
