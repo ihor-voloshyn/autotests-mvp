@@ -3,6 +3,7 @@ package com.ihorvoloshyn.autotests.connectors;
 import com.ihorvoloshyn.autotests.core.config.Environment;
 import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
 import com.ihorvoloshyn.autotests.core.config.SecretResolver;
+import com.ihorvoloshyn.autotests.db.DatabaseType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -38,6 +39,84 @@ class ConnectionFactoryTest {
         var factory = new ConnectionFactory(config);
 
         assertNotNull(factory.rest("service", secrets));
+    }
+
+    @Test
+    void createsCamundaClientFromConfiguredUrl() {
+        FrameworkConfig config = new FrameworkConfig(
+                Environment.TEST, "", "", "",
+                Map.of("camunda.url", "http://10.20.30.40:8080"));
+
+        assertNotNull(new ConnectionFactory(config).camunda());
+    }
+
+    @Test
+    void createsElkClientWithCredentials() {
+        FrameworkConfig config = new FrameworkConfig(
+                Environment.TEST, "", "", "",
+                Map.of(
+                        "elk.url", "https://10.20.30.40:9200",
+                        "elk.username-key", "elk-user",
+                        "elk.password-key", "elk-password"));
+
+        SecretResolver secrets = SecretResolver.fromMap(Map.of(
+                "elk-user", "user",
+                "elk-password", "password"));
+
+        assertNotNull(new ConnectionFactory(config).elk("elk", secrets));
+    }
+
+    @Test
+    void createsDatabaseClientWithMandatorySchema() {
+        FrameworkConfig config = new FrameworkConfig(
+                Environment.TEST, "", "", "",
+                Map.of(
+                        "db.host", "10.20.30.40",
+                        "db.database", "testdb",
+                        "db.schema", "client",
+                        "db.username", "user",
+                        "db.password", "password"));
+
+        var client = new ConnectionFactory(config)
+                .database("db", DatabaseType.POSTGRESQL, SecretResolver.fromMap(config.properties()));
+
+        assertNotNull(client);
+    }
+
+    @Test
+    void createsRabbitMqClientFromUrl() {
+        FrameworkConfig config = new FrameworkConfig(
+                Environment.TEST, "", "", "",
+                Map.of(
+                        "rabbit.url", "amqps://10.20.30.40:5671",
+                        "rabbit.username", "user",
+                        "rabbit.password", "password"));
+
+        assertNotNull(new ConnectionFactory(config)
+                .rabbitMq("rabbit", SecretResolver.fromMap(config.properties())));
+    }
+
+    @Test
+    void createsRabbitMqClientFromEndpointAlias() {
+        FrameworkConfig config = new FrameworkConfig(
+                Environment.TEST, "", "", "",
+                Map.of(
+                        "rabbit.endpoint", "10.20.30.40:5672",
+                        "rabbit.username", "user",
+                        "rabbit.password", "password"));
+
+        assertNotNull(new ConnectionFactory(config)
+                .rabbitMq("rabbit", SecretResolver.fromMap(config.properties())));
+    }
+
+    @Test
+    void rejectsNullRabbitMqSecretResolver() {
+        FrameworkConfig config = new FrameworkConfig(
+                Environment.TEST, "", "", "",
+                Map.of("rabbit.url", "amqp://10.20.30.40:5672"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConnectionFactory(config).rabbitMq("rabbit", null));
     }
 
     @Test
