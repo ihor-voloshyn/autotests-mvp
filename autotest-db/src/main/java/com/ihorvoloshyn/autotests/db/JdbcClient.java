@@ -3,7 +3,7 @@ package com.ihorvoloshyn.autotests.db;
 import java.sql.*;
 import java.util.*;
 
-public class JdbcClient implements AutoCloseable {
+public class JdbcClient implements AutoCloseable, DatabaseHealthClient {
     private final Connection connection;
     private final DatabaseEndpoint endpoint;
 
