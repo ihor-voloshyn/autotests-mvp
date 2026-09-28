@@ -3,6 +3,7 @@ package com.ihorvoloshyn.autotests.connectors;
 import com.ihorvoloshyn.autotests.core.config.Environment;
 import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
 import com.ihorvoloshyn.autotests.core.config.SecretResolver;
+import com.ihorvoloshyn.autotests.db.DatabaseEndpoint;
 import com.ihorvoloshyn.autotests.db.DatabaseType;
 import org.junit.jupiter.api.Test;
 
@@ -18,9 +19,7 @@ class ConnectionFactoryTest {
                 Environment.TEST, "", "", "",
                 Map.of("service.url", "https://example.com:8443/api"));
 
-        var factory = new ConnectionFactory(config);
-
-        assertNotNull(factory.rest("service"));
+        assertNotNull(new ConnectionFactory(config).rest("service"));
     }
 
     @Test
@@ -36,9 +35,7 @@ class ConnectionFactoryTest {
                 "service-user", "user",
                 "service-password", "password"));
 
-        var factory = new ConnectionFactory(config);
-
-        assertNotNull(factory.rest("service", secrets));
+        assertNotNull(new ConnectionFactory(config).rest("service", secrets));
     }
 
     @Test
@@ -67,7 +64,7 @@ class ConnectionFactoryTest {
     }
 
     @Test
-    void createsDatabaseClientWithMandatorySchema() {
+    void databaseConfigurationPreservesMandatorySchema() {
         FrameworkConfig config = new FrameworkConfig(
                 Environment.TEST, "", "", "",
                 Map.of(
@@ -77,10 +74,15 @@ class ConnectionFactoryTest {
                         "db.username", "user",
                         "db.password", "password"));
 
-        var client = new ConnectionFactory(config)
-                .database("db", DatabaseType.POSTGRESQL, SecretResolver.fromMap(config.properties()));
+        DatabaseEndpoint endpoint = DatabaseEndpoint.from(
+                config, "db", DatabaseType.POSTGRESQL,
+                SecretResolver.fromMap(config.properties()));
 
-        assertNotNull(client);
+        assertEquals(DatabaseType.POSTGRESQL, endpoint.type());
+        assertEquals("10.20.30.40", endpoint.host());
+        assertEquals(5432, endpoint.port());
+        assertEquals("testdb", endpoint.database());
+        assertEquals("client", endpoint.schema());
     }
 
     @Test
