@@ -30,6 +30,42 @@ class SoapClientFactoryTest {
     }
 
     @Test
+    void usesHttpDefaultPort80() {
+        TestService proxy = SoapClientFactory.create(
+                TestService.class,
+                "http://localhost/service",
+                null,
+                null);
+
+        assertEquals("http://localhost:80/service",
+                ClientProxy.getClient(proxy).getEndpoint().getEndpointInfo().getAddress());
+    }
+
+    @Test
+    void usesHttpsDefaultPort443() {
+        TestService proxy = SoapClientFactory.create(
+                TestService.class,
+                "https://example.com/service",
+                null,
+                null);
+
+        assertEquals("https://example.com:443/service",
+                ClientProxy.getClient(proxy).getEndpoint().getEndpointInfo().getAddress());
+    }
+
+    @Test
+    void preservesExplicitPort() {
+        TestService proxy = SoapClientFactory.create(
+                TestService.class,
+                "https://example.com:8443/service",
+                null,
+                null);
+
+        assertEquals("https://example.com:8443/service",
+                ClientProxy.getClient(proxy).getEndpoint().getEndpointInfo().getAddress());
+    }
+
+    @Test
     void configuresBasicAuthentication() {
         TestService proxy = SoapClientFactory.create(
                 TestService.class,
