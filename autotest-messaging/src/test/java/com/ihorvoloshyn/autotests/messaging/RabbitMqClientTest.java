@@ -58,8 +58,9 @@ class RabbitMqClientTest {
     void acceptsHostWithoutSchemeAndUsesAmqpDefault() throws Exception {
         RabbitMqClient client = new RabbitMqClient("rabbit.example.com", null, null, null);
         try {
-            assertEquals(5672, connectionFactory(client).getPort());
-            assertFalse(connectionFactory(client).isSSL());
+            ConnectionFactory factory = connectionFactory(client);
+            assertEquals(5672, factory.getPort());
+            assertFalse(factory.isSSL());
         } finally {
             client.close();
         }
@@ -68,7 +69,7 @@ class RabbitMqClientTest {
     @Test
     void rejectsNullEndpoint() {
         assertThrows(IllegalArgumentException.class,
-                () -> new RabbitMqClient(null, "user", "password", "/"));
+                () -> new RabbitMqClient((String) null, "user", "password", "/"));
     }
 
     private static ConnectionFactory connectionFactory(RabbitMqClient client) throws Exception {
