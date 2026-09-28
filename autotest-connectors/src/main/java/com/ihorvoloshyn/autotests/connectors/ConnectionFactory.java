@@ -67,6 +67,10 @@ public final class ConnectionFactory {
     }
 
     public RabbitMqClient rabbitMq(String prefix, SecretResolver secrets) {
+        if (secrets == null) {
+            throw new IllegalArgumentException("secrets must not be null");
+        }
+
         String url = config.property(prefix + ".url", "");
         if (url.isBlank()) {
             url = config.requiredProperty(prefix + ".endpoint");
