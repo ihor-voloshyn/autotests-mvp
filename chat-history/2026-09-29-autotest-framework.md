@@ -517,3 +517,17 @@ Reporting остаётся generic и не содержит бизнесовой
 - Latest health hardening commits:
   - `4a35dd4c1d47e62df96f61ca20197499670e530a`
   - `d20430679ec8768b7784b636b336a0fcc719b7d2`
+
+## 2026-09-29 — Configuration API hardening
+
+- `FrameworkConfig` now provides:
+  - `hasProperty(key)` for checking configured non-blank values;
+  - `propertyOrEmpty(key)` for concise optional access;
+  - existing `requiredProperty(key)` remains the strict API.
+- Configuration keys are validated consistently.
+- Added tests for defaults, blank values, required properties and defensive immutability.
+- Expanded `EnvironmentConfigLoaderTest` to verify the standard application properties are loaded.
+- Latest commits:
+  - `1ea755676e46b15d306964182c388b451e7ce037`
+  - `c8e5005dae9adf6361e3a929bb20b48f5a863beb`
+  - `8ed97cb8df43306095940c83be5e10080bde1ad7`
