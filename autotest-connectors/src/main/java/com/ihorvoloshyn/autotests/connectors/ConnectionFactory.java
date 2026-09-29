@@ -42,19 +42,28 @@ public final class ConnectionFactory {
     }
 
     public RestClient rest(String prefix) {
-        return rest(prefix, SecretResolver.fromMap(config.properties()));
+        return rest(prefix, defaultSecrets());
     }
 
     public RestClient rest(String prefix, SecretResolver secrets) {
+        requirePrefix(prefix);
+        requireSecrets(secrets);
         ServiceConfig service = ServiceConfig.from(config, prefix, prefix, secrets);
         return new RestClient(service.endpoint(), service.credentials());
     }
 
     public CamundaClient camunda(String prefix) {
+        requirePrefix(prefix);
         return new CamundaClient(ServiceConfig.from(config, prefix, prefix).endpoint());
     }
 
+    public ElkClient elk(String prefix) {
+        return elk(prefix, defaultSecrets());
+    }
+
     public ElkClient elk(String prefix, SecretResolver secrets) {
+        requirePrefix(prefix);
+        requireSecrets(secrets);
         ServiceConfig service = ServiceConfig.from(config, prefix, prefix, secrets);
         String authorization = service.hasCredentials()
                 ? basicAuthorization(service.credentials())
@@ -62,11 +71,25 @@ public final class ConnectionFactory {
         return new ElkClient(service.endpoint(), authorization);
     }
 
+    public JdbcClient database(String prefix, DatabaseType type) {
+        return database(prefix, type, defaultSecrets());
+    }
+
     public JdbcClient database(String prefix, DatabaseType type, SecretResolver secrets) {
+        requirePrefix(prefix);
+        if (type == null) {
+            throw new IllegalArgumentException("database type must not be null");
+        }
+        requireSecrets(secrets);
         return DatabaseClientFactory.create(DatabaseEndpoint.from(config, prefix, type, secrets));
     }
 
+    public RabbitMqClient rabbitMq(String prefix) {
+        return rabbitMq(prefix, defaultSecrets());
+    }
+
     public RabbitMqClient rabbitMq(String prefix, SecretResolver secrets) {
+        requirePrefix(prefix);
         if (secrets == null) {
             throw new IllegalArgumentException("secrets must not be null");
         }
@@ -92,9 +115,7 @@ public final class ConnectionFactory {
     }
 
     public VaultClient vault(String prefix) {
-        if (prefix == null || prefix.isBlank()) {
-            throw new IllegalArgumentException("prefix must not be blank");
-        }
+        requirePrefix(prefix);
         return vaultClients.computeIfAbsent(prefix, this::authenticateVault);
     }
 
@@ -116,13 +137,35 @@ public final class ConnectionFactory {
                 .authenticate();
     }
 
+    public <T> T soap(Class<T> serviceClass, String prefix) {
+        return soap(serviceClass, prefix, defaultSecrets());
+    }
+
     public <T> T soap(Class<T> serviceClass, String prefix, SecretResolver secrets) {
+        requirePrefix(prefix);
+        requireSecrets(secrets);
         ServiceConfig service = ServiceConfig.from(config, prefix, prefix, secrets);
         return SoapClientFactory.create(
                 serviceClass,
                 service.endpoint(),
                 service.username(),
                 service.password());
+    }
+
+    private SecretResolver defaultSecrets() {
+        return SecretResolver.fromMap(config.properties());
+    }
+
+    private static void requirePrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) {
+            throw new IllegalArgumentException("prefix must not be blank");
+        }
+    }
+
+    private static void requireSecrets(SecretResolver secrets) {
+        if (secrets == null) {
+            throw new IllegalArgumentException("secrets must not be null");
+        }
     }
 
     private String configuredKey(String key, String fallback) {
