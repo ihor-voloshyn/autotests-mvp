@@ -5,7 +5,7 @@ import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
 import com.ihorvoloshyn.autotests.db.DatabaseType;
 import com.ihorvoloshyn.autotests.health.*;
 import com.ihorvoloshyn.autotests.infrastructure.CommandExecutor;
-import com.ihorvoloshyn.autotests.vault.VaultClient;
+import com.ihorvoloshyn.autotests.vault.VaultClient;\nimport com.ihorvoloshyn.autotests.vault.VaultKvVersion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -129,7 +129,7 @@ public final class HealthCheckFactory {
         return false;
     }
 
-    private static String appendPath(String base, String path) {
+    private static VaultKvVersion parseKvVersion(String value) {\n        try {\n            return VaultKvVersion.valueOf(value.trim().toUpperCase());\n        } catch (Exception e) {\n            throw new IllegalArgumentException("Unsupported Vault KV version: " + value, e);\n        }\n    }\n\n    private static String appendPath(String base, String path) {
         if (path == null || path.isBlank()) return base;
         if (base.endsWith("/") && path.startsWith("/")) return base + path.substring(1);
         if (!base.endsWith("/") && !path.startsWith("/")) return base + "/" + path;
