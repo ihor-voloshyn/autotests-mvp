@@ -39,4 +39,10 @@ class ConnectionHealthServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new ConnectionHealthService(null));
     }
+
+    @Test
+    void rejectsNullCheckEntry() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new ConnectionHealthService(java.util.Arrays.asList((ConnectionCheck) null)));
+    }
 }
