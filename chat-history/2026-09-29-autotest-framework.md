@@ -488,3 +488,27 @@ Reporting остаётся generic и не содержит бизнесовой
 ### Текущая следующая задача
 
 Продолжить проверку и укрепление публичного API `ConnectionFactory`, затем улучшать конфигурацию и интеграцию health/reporting. Framework по-прежнему не должен содержать project-specific business logic.
+
+
+## 2026-09-29 — Unified ConnectionFactory and Allure health integration
+
+- Strengthened `ConnectionFactory` as the single generic public entry point:
+  - added overloads using the default configuration-backed `SecretResolver`;
+  - added `elk(prefix)`, `database(prefix, type)`, `rabbitMq(prefix)`, and `soap(serviceClass, prefix)`;
+  - centralized validation of service prefixes and secret resolvers;
+  - database type is validated before endpoint construction;
+  - existing lazy Vault authentication and caching remain unchanged.
+- Expanded `ConnectionFactoryTest` for overloads, blank prefixes, and null database type.
+- Added `AllureConnectionHealthReporter` in `autotest-reporting`:
+  - accepts generic `ConnectionCheckResult` values;
+  - creates a separate Allure step for each check;
+  - records PASS/FAIL, duration and message;
+  - validates null result lists/entries.
+- `autotest-reporting` now depends on `autotest-health`, keeping the dependency direction one-way: health does not depend on reporting.
+- Latest commits:
+  - `0c32de35a7d624afe98afae098d5dc3ff22ce025` — ConnectionFactory API
+  - `ffbd8ef384831062883067e2c1a4d6fc8dc7bc2a` — ConnectionFactory tests
+  - `53837992175994e542cd571bdd8fe128f68fd1a7` — reporting/health dependency
+  - `411d1600f187c3c92b77e75340fbea090cef31c2` — Allure health reporter
+  - `170530db7c712155b18edd816eb6e4099cdb505e` — reporter tests
+- CI verification is still pending for these post-#52 changes; connector visibility currently does not expose a push-triggered run for these commits.
