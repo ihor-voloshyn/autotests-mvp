@@ -38,6 +38,15 @@ class ConnectionFactoryTest {
     }
 
     @Test
+    void createsElkClientWithoutExplicitSecretResolver() {
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("elk.url", "https://10.20.30.40:9200",
+                        "elk.username", "user",
+                        "elk.password", "password"));
+        assertNotNull(new ConnectionFactory(config).elk("elk"));
+    }
+
+    @Test
     void createsElkClientWithCredentials() {
         FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
                 Map.of("elk.url", "https://10.20.30.40:9200",
@@ -68,6 +77,17 @@ class ConnectionFactoryTest {
     }
 
     @Test
+    void createsDatabaseClientUsingDefaultSecretResolver() {
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("db.host", "10.20.30.40",
+                        "db.database", "testdb",
+                        "db.schema", "client",
+                        "db.username", "user",
+                        "db.password", "password"));
+        assertNotNull(new ConnectionFactory(config).database("db", DatabaseType.POSTGRESQL));
+    }
+
+    @Test
     void createsRabbitMqClientFromUrl() {
         FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
                 Map.of("rabbit.url", "amqps://10.20.30.40:5671",
@@ -88,11 +108,44 @@ class ConnectionFactoryTest {
     }
 
     @Test
+    void createsRabbitMqClientUsingDefaultSecretResolver() {
+        FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
+                Map.of("rabbit.url", "amqp://10.20.30.40:5672",
+                        "rabbit.username", "user",
+                        "rabbit.password", "password"));
+        assertNotNull(new ConnectionFactory(config).rabbitMq("rabbit"));
+    }
+
+    @Test
     void rejectsNullRabbitMqSecretResolver() {
         FrameworkConfig config = new FrameworkConfig(Environment.TEST, "", "", "",
                 Map.of("rabbit.url", "amqp://10.20.30.40:5672"));
         assertThrows(IllegalArgumentException.class,
                 () -> new ConnectionFactory(config).rabbitMq("rabbit", null));
+    }
+
+    @Test
+    void rejectsBlankPrefixes() {
+        ConnectionFactory factory = new ConnectionFactory(
+                new FrameworkConfig(Environment.TEST, "", "", "", Map.of()));
+        assertAll(
+                () -> assertThrows(IllegalArgumentException.class, () -> factory.rest(" ")),
+                () -> assertThrows(IllegalArgumentException.class, () -> factory.camunda(" ")),
+                () -> assertThrows(IllegalArgumentException.class, () -> factory.elk(" ")),
+                () -> assertThrows(IllegalArgumentException.class, () ->
+                        factory.database(" ", DatabaseType.POSTGRESQL)),
+                () -> assertThrows(IllegalArgumentException.class, () ->
+                        factory.rabbitMq(" ")),
+                () -> assertThrows(IllegalArgumentException.class, () ->
+                        factory.vault(" ")));
+    }
+
+    @Test
+    void rejectsNullDatabaseType() {
+        ConnectionFactory factory = new ConnectionFactory(
+                new FrameworkConfig(Environment.TEST, "", "", "", Map.of()));
+        assertThrows(IllegalArgumentException.class,
+                () -> factory.database("db", null));
     }
 
     @Test
