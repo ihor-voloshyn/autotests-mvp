@@ -556,3 +556,15 @@ Dependency direction:
 Это остаётся полностью generic API и не содержит project-specific бизнес-логики.
 
 CI для новых commits необходимо отдельно проверить; текущий GitHub connector может не показывать push-triggered runs.
+
+
+## 2026-09-29 — Health execution engine
+
+Health execution was extended beyond simple sequential aggregation:
+- added `HealthRunResult` with total/successful/failed counts, overall status and total duration;
+- added `HealthRunOptions` with sequential, parallel and fail-fast modes;
+- `ConnectionHealthService.run()` now returns a structured run result;
+- existing `checkAll()` remains backward-compatible and uses sequential execution;
+- added tests for summaries, parallel execution, sequential fail-fast and argument validation.
+
+The framework still keeps health checks generic and independent from reporting/business logic.
