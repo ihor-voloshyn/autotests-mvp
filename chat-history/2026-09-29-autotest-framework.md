@@ -531,3 +531,28 @@ Reporting остаётся generic и не содержит бизнесовой
   - `1ea755676e46b15d306964182c388b451e7ce037`
   - `c8e5005dae9adf6361e3a929bb20b48f5a863beb`
   - `8ed97cb8df43306095940c83be5e10080bde1ad7`
+
+
+## 2026-09-29 — Config-driven Health Runner
+
+Продолжен переход от отдельных health-check классов к полноценной конфигурации framework.
+
+Добавлены:
+- `HealthCheckFactory` в `autotest-connectors`;
+- `HealthCheckRunner` для выполнения всех настроенных проверок;
+- автоматическое создание проверок для REST, SOAP, Vault, PostgreSQL, Oracle, Camunda, RabbitMQ, ELK и OKD;
+- проверки создаются только если соответствующая конфигурация присутствует;
+- внешние подключения не выполняются при создании factory/checks;
+- PostgreSQL/Oracle требуют полный набор host + database + schema;
+- Vault health check теперь учитывает `mount` и `KV1/KV2`;
+- добавлена валидация неизвестной версии Vault KV;
+- добавлены unit tests factory/runner.
+
+Dependency direction:
+- `autotest-connectors -> autotest-health`;
+- `autotest-health` не зависит от reporting;
+- `autotest-reporting -> autotest-health`.
+
+Это остаётся полностью generic API и не содержит project-specific бизнес-логики.
+
+CI для новых commits необходимо отдельно проверить; текущий GitHub connector может не показывать push-triggered runs.
