@@ -20,6 +20,18 @@ public record FrameworkConfig(
         return properties.getOrDefault(key, fallback);
     }
 
+    public boolean hasProperty(String key) {
+        if (key == null || key.isBlank()) {
+            throw new IllegalArgumentException("Configuration key must not be blank");
+        }
+        String value = properties.get(key);
+        return value != null && !value.isBlank();
+    }
+
+    public String propertyOrEmpty(String key) {
+        return property(key, "");
+    }
+
     public String requiredProperty(String key) {
         String value = property(key, null);
         if (value == null || value.isBlank()) {
