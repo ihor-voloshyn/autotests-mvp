@@ -512,3 +512,8 @@ Reporting остаётся generic и не содержит бизнесовой
   - `411d1600f187c3c92b77e75340fbea090cef31c2` — Allure health reporter
   - `170530db7c712155b18edd816eb6e4099cdb505e` — reporter tests
 - CI verification is still pending for these post-#52 changes; connector visibility currently does not expose a push-triggered run for these commits.
+
+- Additional hardening: `ConnectionHealthService` now rejects null check entries at construction time instead of allowing a later NullPointerException during aggregation; corresponding test added.
+- Latest health hardening commits:
+  - `4a35dd4c1d47e62df96f61ca20197499670e530a`
+  - `d20430679ec8768b7784b636b336a0fcc719b7d2`
