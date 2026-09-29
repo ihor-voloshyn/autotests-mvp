@@ -7,6 +7,9 @@ public final class ConnectionHealthService {
 
     public ConnectionHealthService(List<ConnectionCheck> checks) {
         if (checks == null) throw new IllegalArgumentException("checks must not be null");
+        if (checks.stream().anyMatch(check -> check == null)) {
+            throw new IllegalArgumentException("checks must not contain null");
+        }
         this.checks = List.copyOf(checks);
     }
 
