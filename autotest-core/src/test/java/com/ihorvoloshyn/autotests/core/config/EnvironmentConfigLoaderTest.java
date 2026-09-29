@@ -13,6 +13,14 @@ class EnvironmentConfigLoaderTest {
     }
 
     @Test
+    void loadsApplicationProperties() {
+        FrameworkConfig config = new EnvironmentConfigLoader("application.properties").load();
+        assertTrue(config.hasProperty("test.environment"));
+        assertTrue(config.hasProperty("service.base-url"));
+        assertTrue(config.hasProperty("vault.url"));
+    }
+
+    @Test
     void blankResourceNameIsRejected() {
         assertThrows(IllegalArgumentException.class, () -> new EnvironmentConfigLoader(" "));
     }
