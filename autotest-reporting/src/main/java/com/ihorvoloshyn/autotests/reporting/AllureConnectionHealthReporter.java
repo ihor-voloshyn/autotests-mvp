@@ -1,6 +1,7 @@
 package com.ihorvoloshyn.autotests.reporting;
 
 import com.ihorvoloshyn.autotests.health.ConnectionCheckResult;
+import com.ihorvoloshyn.autotests.health.HealthRunResult;
 
 import java.util.List;
 
@@ -13,12 +14,24 @@ public final class AllureConnectionHealthReporter {
         if (results == null) {
             throw new IllegalArgumentException("results must not be null");
         }
+        report(new HealthRunResult(results, 0));
+    }
 
-        for (ConnectionCheckResult result : results) {
-            if (result == null) {
-                throw new IllegalArgumentException("results must not contain null");
-            }
+    public void report(HealthRunResult run) {
+        if (run == null) {
+            throw new IllegalArgumentException("run must not be null");
+        }
 
+        AllureSupport.step(
+                "Connection health: " + run.successful() + "/" + run.total() + " passed",
+                () -> {
+                    AllureSupport.parameter("total", Long.toString(run.total()));
+                    AllureSupport.parameter("successful", Long.toString(run.successful()));
+                    AllureSupport.parameter("failed", Long.toString(run.failed()));
+                    AllureSupport.parameter("durationMs", Long.toString(run.durationMs()));
+                });
+
+        for (ConnectionCheckResult result : run.results()) {
             String stepName = result.name() + " [" + (result.success() ? "PASS" : "FAIL") + "]";
             AllureSupport.step(stepName, () -> {
                 AllureSupport.parameter("success", Boolean.toString(result.success()));
