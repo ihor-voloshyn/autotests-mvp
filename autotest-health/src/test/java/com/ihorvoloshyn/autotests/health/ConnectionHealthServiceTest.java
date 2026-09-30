@@ -124,7 +124,9 @@ class ConnectionHealthServiceTest {
 
         ConnectionCheck failure = () -> {
             failureReady.countDown();
-            assertTrue(allowFailure.await(1, TimeUnit.SECONDS), "Failure check should be released");
+            if (!allowFailure.await(1, TimeUnit.SECONDS)) {
+                throw new IllegalStateException("Failure check was not released");
+            }
             return ConnectionCheckResult.failure("bad", "FAIL", 1);
         };
 
