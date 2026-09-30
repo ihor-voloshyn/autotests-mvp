@@ -8,9 +8,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 
 class HealthCheckExtensionTest {
+
+    @Test
+    void defaultConstructorCreatesUsableExtension() {
+        assertNotNull(new HealthCheckExtension());
+    }
 
     @Test
     void emptyConfigurationIsSuccessfulInReportOnlyMode() {
