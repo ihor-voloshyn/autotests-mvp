@@ -106,6 +106,8 @@ class ConnectionHealthServiceTest {
     @Test
     void parallelFailFastCancelsRunningChecksAfterFirstFailure() throws Exception {
         CountDownLatch slowStarted = new CountDownLatch(1);
+        CountDownLatch failureReady = new CountDownLatch(1);
+        CountDownLatch allowFailure = new CountDownLatch(1);
         CountDownLatch slowInterrupted = new CountDownLatch(1);
 
         ConnectionCheck slow = () -> {
@@ -120,8 +122,11 @@ class ConnectionHealthServiceTest {
             return ConnectionCheckResult.success("slow", "OK", 1);
         };
 
-        ConnectionCheck failure = () ->
-                ConnectionCheckResult.failure("bad", "FAIL", 1);
+        ConnectionCheck failure = () -> {
+            failureReady.countDown();
+            assertTrue(allowFailure.await(1, TimeUnit.SECONDS), "Failure check should be released");
+            return ConnectionCheckResult.failure("bad", "FAIL", 1);
+        };
 
         ConnectionHealthService service = new ConnectionHealthService(List.of(slow, failure));
 
@@ -129,6 +134,8 @@ class ConnectionHealthServiceTest {
         runner.start();
 
         assertTrue(slowStarted.await(1, TimeUnit.SECONDS), "Slow check should start");
+        assertTrue(failureReady.await(1, TimeUnit.SECONDS), "Failure check should start");
+        allowFailure.countDown();
         runner.join(1_000);
 
         assertFalse(runner.isAlive(), "Fail-fast run should return after failure");
