@@ -104,15 +104,19 @@ class ConnectionHealthServiceTest {
     }
 
     @Test
-    void parallelFailFastStopsWaitingAfterFirstFailure() throws Exception {
+    void parallelFailFastCancelsRunningChecksAfterFirstFailure() throws Exception {
         CountDownLatch slowStarted = new CountDownLatch(1);
-        CountDownLatch releaseSlow = new CountDownLatch(1);
-        AtomicInteger completed = new AtomicInteger();
+        CountDownLatch slowInterrupted = new CountDownLatch(1);
 
         ConnectionCheck slow = () -> {
             slowStarted.countDown();
-            releaseSlow.await();
-            completed.incrementAndGet();
+            try {
+                Thread.sleep(10_000);
+            } catch (InterruptedException e) {
+                slowInterrupted.countDown();
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("interrupted");
+            }
             return ConnectionCheckResult.success("slow", "OK", 1);
         };
 
@@ -128,11 +132,8 @@ class ConnectionHealthServiceTest {
         runner.join(1_000);
 
         assertFalse(runner.isAlive(), "Fail-fast run should return after failure");
-        assertEquals(0, completed.get(), "Slow check should not have completed before cancellation");
-
-        releaseSlow.countDown();
-        runner.join(1_000);
-        assertEquals(1, completed.get());
+        assertTrue(slowInterrupted.await(1, TimeUnit.SECONDS),
+                "Running check should receive cancellation interrupt");
     }
 
     @Test
