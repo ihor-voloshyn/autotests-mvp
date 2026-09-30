@@ -1,6 +1,7 @@
 package com.ihorvoloshyn.autotests.reporting;
 
 import com.ihorvoloshyn.autotests.health.ConnectionCheckResult;
+import com.ihorvoloshyn.autotests.health.HealthRunResult;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -21,8 +22,11 @@ class AllureConnectionHealthReporterTest {
 
     @Test
     void rejectsNullResults() {
+        AllureConnectionHealthReporter reporter = new AllureConnectionHealthReporter();
         assertThrows(IllegalArgumentException.class,
-                () -> new AllureConnectionHealthReporter().report(null));
+                () -> reporter.report((List<ConnectionCheckResult>) null));
+        assertThrows(IllegalArgumentException.class,
+                () -> reporter.report((HealthRunResult) null));
     }
 
     @Test
