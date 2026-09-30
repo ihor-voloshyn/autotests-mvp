@@ -3,6 +3,9 @@ package com.ihorvoloshyn.autotests.health;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -45,7 +48,6 @@ class ConnectionHealthServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new ConnectionHealthService(java.util.Arrays.asList((ConnectionCheck) null)));
     }
-}
 
     @Test
     void returnsRunSummaryForSequentialExecution() {
@@ -73,7 +75,7 @@ class ConnectionHealthServiceTest {
 
         long start = System.nanoTime();
         HealthRunResult result = new ConnectionHealthService(List.of(first, second))
-                .run(HealthRunOptions.parallel());
+                .run(HealthRunOptions.parallelExecution());
         long elapsed = (System.nanoTime() - start) / 1_000_000;
 
         assertTrue(result.success());
@@ -83,22 +85,54 @@ class ConnectionHealthServiceTest {
 
     @Test
     void failFastStopsSequentialExecution() {
-        int[] calls = {0};
+        AtomicInteger calls = new AtomicInteger();
         ConnectionCheck failure = () -> {
-            calls[0]++;
+            calls.incrementAndGet();
             return ConnectionCheckResult.failure("bad", "FAIL", 1);
         };
         ConnectionCheck skipped = () -> {
-            calls[0]++;
+            calls.incrementAndGet();
             return ConnectionCheckResult.success("skipped", "OK", 1);
         };
 
         HealthRunResult result = new ConnectionHealthService(List.of(failure, skipped))
                 .run(new HealthRunOptions(false, true));
 
-        assertEquals(1, calls[0]);
+        assertEquals(1, calls.get());
         assertEquals(1, result.total());
         assertFalse(result.success());
+    }
+
+    @Test
+    void parallelFailFastStopsWaitingAfterFirstFailure() throws Exception {
+        CountDownLatch slowStarted = new CountDownLatch(1);
+        CountDownLatch releaseSlow = new CountDownLatch(1);
+        AtomicInteger completed = new AtomicInteger();
+
+        ConnectionCheck slow = () -> {
+            slowStarted.countDown();
+            releaseSlow.await();
+            completed.incrementAndGet();
+            return ConnectionCheckResult.success("slow", "OK", 1);
+        };
+
+        ConnectionCheck failure = () ->
+                ConnectionCheckResult.failure("bad", "FAIL", 1);
+
+        ConnectionHealthService service = new ConnectionHealthService(List.of(slow, failure));
+
+        Thread runner = new Thread(() -> service.run(HealthRunOptions.parallelFailFast()));
+        runner.start();
+
+        assertTrue(slowStarted.await(1, TimeUnit.SECONDS), "Slow check should start");
+        runner.join(1_000);
+
+        assertFalse(runner.isAlive(), "Fail-fast run should return after failure");
+        assertEquals(0, completed.get(), "Slow check should not have completed before cancellation");
+
+        releaseSlow.countDown();
+        runner.join(1_000);
+        assertEquals(1, completed.get());
     }
 
     @Test
@@ -115,4 +149,4 @@ class ConnectionHealthServiceTest {
             throw new IllegalStateException(e);
         }
     }
-
+}
