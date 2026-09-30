@@ -31,7 +31,7 @@ class HealthCheckExtensionTest {
         HealthCheckRunner runner = new HealthCheckRunner(
                 new HealthCheckFactory(FrameworkConfig.defaults()));
 
-        var result = runner.run(HealthRunOptions.parallel());
+        var result = runner.run(HealthRunOptions.parallelExecution());
 
         assertEquals(0, result.total());
         assertEquals(0, result.failed());
