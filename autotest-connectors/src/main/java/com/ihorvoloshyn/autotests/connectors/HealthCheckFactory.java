@@ -5,7 +5,7 @@ import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
 import com.ihorvoloshyn.autotests.db.DatabaseType;
 import com.ihorvoloshyn.autotests.health.*;
 import com.ihorvoloshyn.autotests.infrastructure.CommandExecutor;
-import com.ihorvoloshyn.autotests.vault.VaultClient;\nimport com.ihorvoloshyn.autotests.vault.VaultKvVersion;
+import com.ihorvoloshyn.autotests.vault.VaultKvVersion;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,7 +26,6 @@ public final class HealthCheckFactory {
 
     public List<ConnectionCheck> createChecks() {
         List<ConnectionCheck> checks = new ArrayList<>();
-
         addHttp(checks, "REST", "health.rest.url");
         addSoap(checks);
         addVault(checks);
@@ -36,7 +35,6 @@ public final class HealthCheckFactory {
         addRabbitMq(checks);
         addElk(checks);
         addOkd(checks);
-
         return List.copyOf(checks);
     }
 
@@ -54,9 +52,8 @@ public final class HealthCheckFactory {
         if (url.isBlank()) return;
 
         String wsdlPath = valueOr("health.soap.wsdl-path", "?wsdl");
-        String endpoint = appendPath(url, wsdlPath);
         checks.add(new SoapConnectionCheck(
-                endpoint,
+                appendPath(url, wsdlPath),
                 value("health.soap.username"),
                 value("health.soap.password")));
     }
@@ -66,6 +63,7 @@ public final class HealthCheckFactory {
         String path = value("health.vault.check.path");
         if (url.isBlank() || path.isBlank()) return;
 
+        parseKvVersion(valueOr("health.vault.kv-version", "KV2"));
         checks.add(new VaultConnectionCheck(
                 () -> connections.vault("health.vault"),
                 path));
@@ -76,7 +74,15 @@ public final class HealthCheckFactory {
             DatabaseType type,
             String name,
             String prefix) {
-        if (!hasAny(prefix + ".host", prefix + ".database", prefix + ".schema")) return;
+
+        boolean hasHost = !value(prefix + ".host").isBlank();
+        boolean hasDatabase = !value(prefix + ".database").isBlank();
+        boolean hasSchema = !value(prefix + ".schema").isBlank();
+
+        if (!hasHost && !hasDatabase && !hasSchema) return;
+        if (!hasHost || !hasDatabase || !hasSchema) {
+            throw new IllegalStateException(prefix + " requires host, database and schema");
+        }
 
         checks.add(new DatabaseConnectionCheck(
                 name,
@@ -84,8 +90,7 @@ public final class HealthCheckFactory {
     }
 
     private void addCamunda(List<ConnectionCheck> checks) {
-        String url = value("health.camunda.url");
-        if (!url.isBlank()) {
+        if (!value("health.camunda.url").isBlank()) {
             CamundaClient client = connections.camunda("health.camunda");
             checks.add(new CamundaConnectionCheck(client));
         }
@@ -93,23 +98,22 @@ public final class HealthCheckFactory {
 
     private void addRabbitMq(List<ConnectionCheck> checks) {
         String endpoint = value("health.rabbitmq.endpoint");
-        if (endpoint.isBlank() && value("health.rabbitmq.url").isBlank()) return;
+        String url = value("health.rabbitmq.url");
+        if (endpoint.isBlank() && url.isBlank()) return;
 
         checks.add(new RabbitMqConnectionCheck(
                 connections.rabbitMq("health.rabbitmq")));
     }
 
     private void addElk(List<ConnectionCheck> checks) {
-        String url = value("health.elk.url");
-        if (!url.isBlank()) {
+        if (!value("health.elk.url").isBlank()) {
             checks.add(new ElkConnectionCheck(connections.elk("health.elk")));
         }
     }
 
     private void addOkd(List<ConnectionCheck> checks) {
-        String namespace = value("health.okd.namespace");
-        if (!namespace.isBlank()) {
-            checks.add(new OkdConnectionCheck(new CommandExecutor(), namespace));
+        if (!value("health.okd.namespace").isBlank()) {
+            checks.add(new OkdConnectionCheck(new CommandExecutor(), value("health.okd.namespace")));
         }
     }
 
@@ -122,14 +126,15 @@ public final class HealthCheckFactory {
         return value.isBlank() ? fallback : value;
     }
 
-    private boolean hasAny(String... keys) {
-        for (String key : keys) {
-            if (!value(key).isBlank()) return true;
+    private static VaultKvVersion parseKvVersion(String value) {
+        try {
+            return VaultKvVersion.valueOf(value.trim().toUpperCase());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Unsupported Vault KV version: " + value, e);
         }
-        return false;
     }
 
-    private static VaultKvVersion parseKvVersion(String value) {\n        try {\n            return VaultKvVersion.valueOf(value.trim().toUpperCase());\n        } catch (Exception e) {\n            throw new IllegalArgumentException("Unsupported Vault KV version: " + value, e);\n        }\n    }\n\n    private static String appendPath(String base, String path) {
+    private static String appendPath(String base, String path) {
         if (path == null || path.isBlank()) return base;
         if (base.endsWith("/") && path.startsWith("/")) return base + path.substring(1);
         if (!base.endsWith("/") && !path.startsWith("/")) return base + "/" + path;
