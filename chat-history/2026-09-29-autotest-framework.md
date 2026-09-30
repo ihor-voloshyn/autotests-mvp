@@ -568,3 +568,21 @@ Health execution was extended beyond simple sequential aggregation:
 - added tests for summaries, parallel execution, sequential fail-fast and argument validation.
 
 The framework still keeps health checks generic and independent from reporting/business logic.
+
+
+## 2026-09-30 — JUnit health integration
+
+- Added `autotest-junit` as a separate reusable integration module.
+- Added `HealthCheckExtension` for JUnit 5 `BeforeAllCallback` execution.
+- Extension supports:
+  - configurable `HealthRunOptions`;
+  - `REPORT_ONLY` policy;
+  - `FAIL_ON_ANY_FAILURE` policy;
+  - Allure health reporting.
+- `HealthCheckRunner` now exposes structured `HealthRunResult` while preserving the old `List<ConnectionCheckResult> run()` API.
+- `AllureConnectionHealthReporter` now reports an overall summary plus individual checks and remains backward compatible with the list-based API.
+- Fixed `HealthCheckFactory` source formatting corruption and restored strict PostgreSQL/Oracle host + database + schema validation and Vault KV-version validation.
+- `autotest-tests` now consumes the JUnit integration module.
+- CI runs are currently in progress for the latest commits; final green verification is pending.
+
+The framework remains generic: no project-specific endpoints, process keys, database tables or business scenarios were introduced.
