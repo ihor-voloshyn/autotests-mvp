@@ -1,6 +1,8 @@
 package com.ihorvoloshyn.autotests.connectors;
 
 import com.ihorvoloshyn.autotests.health.ConnectionCheckResult;
+import com.ihorvoloshyn.autotests.health.HealthRunOptions;
+import com.ihorvoloshyn.autotests.health.HealthRunResult;
 
 import java.util.List;
 
@@ -16,6 +18,11 @@ public final class HealthCheckRunner {
     }
 
     public List<ConnectionCheckResult> run() {
-        return factory.createService().checkAll();
+        return run(HealthRunOptions.sequential()).results();
+    }
+
+    public HealthRunResult run(HealthRunOptions options) {
+        if (options == null) throw new IllegalArgumentException("options must not be null");
+        return factory.createService().run(options);
     }
 }
