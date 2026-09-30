@@ -9,7 +9,7 @@
   <modules>
     <module>autotest-core</module><module>autotest-rest</module><module>autotest-soap</module>
     <module>autotest-vault</module><module>autotest-db</module><module>autotest-camunda</module><module>autotest-health</module><module>autotest-messaging</module>
-    <module>autotest-infrastructure</module><module>autotest-reporting</module><module>autotest-connectors</module><module>autotest-tests</module>
+    <module>autotest-infrastructure</module><module>autotest-reporting</module><module>autotest-connectors</module><module>autotest-junit</module><module>autotest-tests</module>
   </modules>
   <properties>
     <java.version>21</java.version><maven.compiler.release>21</maven.compiler.release>
@@ -21,11 +21,7 @@
     <dependencies><dependency><groupId>org.junit</groupId><artifactId>junit-bom</artifactId><version>${junit.version}</version><type>pom</type><scope>import</scope></dependency></dependencies>
   </dependencyManagement>
   <dependencies>
-    <dependency>
-      <groupId>org.junit.jupiter</groupId>
-      <artifactId>junit-jupiter</artifactId>
-      <scope>test</scope>
-    </dependency>
+    <dependency><groupId>org.junit.jupiter</groupId><artifactId>junit-jupiter</artifactId><scope>test</scope></dependency>
   </dependencies>
   <build><pluginManagement><plugins>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>${maven.compiler.version}</version><configuration><release>${maven.compiler.release}</release></configuration></plugin>
