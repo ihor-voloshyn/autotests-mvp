@@ -5,7 +5,7 @@ public record HealthRunOptions(boolean parallel, boolean failFast) {
         return new HealthRunOptions(false, false);
     }
 
-    public static HealthRunOptions parallel() {
+    public static HealthRunOptions parallelExecution() {
         return new HealthRunOptions(true, false);
     }
 
