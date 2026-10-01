@@ -15,6 +15,7 @@ Reusable Java 21 / Maven automation framework for service, integration and proce
 - **autotest-reporting** — Allure integration.
 - **autotest-health** — reusable connection health checks.
 - **autotest-connectors** — unified connection factory for the framework adapters.
+- **autotest-junit** — JUnit 5 integration, including the reusable infrastructure health-check extension.
 - **autotest-tests** — framework-level and project-specific test scenarios.
 
 ## Connectivity
@@ -39,6 +40,24 @@ Vault authentication is separated from secret retrieval:
 1. HTTP Basic Authentication obtains a Vault token.
 2. The token is used for subsequent API calls.
 3. KV v1 and KV v2 are supported behind the same secret-provider abstraction.
+
+## JUnit 5 health checks
+
+The framework can run configured infrastructure checks before a JUnit 5 test class:
+
+```java
+@ExtendWith(HealthCheckExtension.class)
+class MyIntegrationTest {
+    // tests run only after configured health checks succeed
+}
+```
+
+The extension supports two policies:
+
+- `FAIL_ON_ANY_FAILURE` — infrastructure failures fail the test class startup.
+- `REPORT_ONLY` — results are published to Allure without failing startup.
+
+Health checks can run sequentially, in parallel, or in parallel fail-fast mode through `HealthRunOptions`.
 
 ## Baseline
 
