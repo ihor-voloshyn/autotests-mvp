@@ -33,6 +33,22 @@ Default ports are used only when a port is omitted and the protocol has a define
 
 Database configuration requires an explicit schema. PostgreSQL and Oracle clients apply the configured schema to the JDBC session.
 
+## REST timeouts
+
+REST client timeouts are configured in `autotest-core/src/main/resources/application.properties` (all values are milliseconds):
+
+```properties
+rest.timeout.connection-request-ms=5000
+rest.timeout.connect-ms=5000
+rest.timeout.response-ms=10000
+```
+
+- `rest.timeout.connection-request-ms` — maximum time to wait for a connection from the HTTP connection pool.
+- `rest.timeout.connect-ms` — maximum time to establish a network connection.
+- `rest.timeout.response-ms` — socket read timeout while waiting for response data.
+
+All values must be positive integers. If a property is absent, the client uses the defaults shown above.
+
 ## Vault
 
 Vault authentication is separated from secret retrieval:
