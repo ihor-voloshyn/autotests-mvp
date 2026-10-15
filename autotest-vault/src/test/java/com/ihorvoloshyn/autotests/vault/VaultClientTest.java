@@ -72,6 +72,30 @@ class VaultClientTest {
                 () -> client.readData("secret", "app", VaultKvVersion.KV1));
     }
 
+    @Test
+    void rejectsNullKvVersion() {
+        VaultClient client = new VaultClient("http://localhost:8200", new VaultToken("token"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> client.readData("secret", "app", null));
+    }
+
+    @Test
+    void rejectsMountThatContainsOnlySlashes() {
+        VaultClient client = new VaultClient("http://localhost:8200", new VaultToken("token"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> client.readData("///", "app", VaultKvVersion.KV2));
+    }
+
+    @Test
+    void rejectsSecretPathThatContainsOnlySlashes() {
+        VaultClient client = new VaultClient("http://localhost:8200", new VaultToken("token"));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> client.readData("secret", "///", VaultKvVersion.KV1));
+    }
+
     private void startServer(String path, int status, String body) throws IOException {
         server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
         server.createContext(path, exchange -> {
