@@ -124,8 +124,13 @@ class ConnectionHealthServiceTest {
 
         ConnectionCheck failure = () -> {
             failureReady.countDown();
-            if (!allowFailure.await(1, TimeUnit.SECONDS)) {
-                throw new IllegalStateException("Failure check was not released");
+            try {
+                if (!allowFailure.await(1, TimeUnit.SECONDS)) {
+                    throw new IllegalStateException("Failure check was not released");
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new IllegalStateException("Failure check interrupted", e);
             }
             return ConnectionCheckResult.failure("bad", "FAIL", 1);
         };
