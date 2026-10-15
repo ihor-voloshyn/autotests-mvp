@@ -14,22 +14,22 @@ class HealthCheckFactoryTest {
 
     @Test
     void createsOnlyConfiguredChecks() {
-        FrameworkConfig config = config(Map.of(
-                "health.rest.url", "http://localhost:18080",
-                "health.soap.url", "http://localhost:18081/service",
-                "health.vault.url", "http://localhost:18200",
-                "health.vault.username", "user",
-                "health.vault.password", "password",
-                "health.vault.check.path", "health",
-                "health.vault.mount", "secret",
-                "health.vault.kv-version", "KV2",
-                "health.postgresql.host", "localhost",
-                "health.postgresql.database", "testdb",
-                "health.postgresql.schema", "public",
-                "health.camunda.url", "http://localhost:18143",
-                "health.rabbitmq.endpoint", "localhost:15672",
-                "health.elk.url", "http://localhost:19200",
-                "health.okd.namespace", "test"));
+        FrameworkConfig config = config(Map.ofEntries(
+                Map.entry("health.rest.url", "http://localhost:18080"),
+                Map.entry("health.soap.url", "http://localhost:18081/service"),
+                Map.entry("health.vault.url", "http://localhost:18200"),
+                Map.entry("health.vault.username", "user"),
+                Map.entry("health.vault.password", "password"),
+                Map.entry("health.vault.check.path", "health"),
+                Map.entry("health.vault.mount", "secret"),
+                Map.entry("health.vault.kv-version", "KV2"),
+                Map.entry("health.postgresql.host", "localhost"),
+                Map.entry("health.postgresql.database", "testdb"),
+                Map.entry("health.postgresql.schema", "public"),
+                Map.entry("health.camunda.url", "http://localhost:18143"),
+                Map.entry("health.rabbitmq.endpoint", "localhost:15672"),
+                Map.entry("health.elk.url", "http://localhost:19200"),
+                Map.entry("health.okd.namespace", "test")));
 
         List<String> names = new HealthCheckFactory(config).createChecks().stream()
                 .map(check -> check.getClass().getSimpleName())
