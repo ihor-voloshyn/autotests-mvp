@@ -9,6 +9,7 @@ import com.ihorvoloshyn.autotests.vault.VaultKvVersion;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Builds only the health checks explicitly configured in FrameworkConfig.
@@ -130,7 +131,7 @@ public final class HealthCheckFactory {
 
     private static VaultKvVersion parseKvVersion(String value) {
         try {
-            return VaultKvVersion.valueOf(value.trim().toUpperCase());
+            return VaultKvVersion.valueOf(value.trim().toUpperCase(Locale.ROOT));
         } catch (Exception e) {
             throw new IllegalArgumentException("Unsupported Vault KV version: " + value, e);
         }
@@ -146,8 +147,14 @@ public final class HealthCheckFactory {
         if (version == null) {
             throw new IllegalArgumentException("Vault KV version must not be null");
         }
-        String cleanMount = trimSlashes(mount);
-        String cleanPath = trimLeadingSlashes(path);
+        String cleanMount = trimSlashes(mount.trim());
+        String cleanPath = trimLeadingSlashes(path.trim()).replaceAll("/+$", "");
+        if (cleanMount.isEmpty()) {
+            throw new IllegalArgumentException("Vault mount must contain a path segment");
+        }
+        if (cleanPath.isEmpty()) {
+            throw new IllegalArgumentException("Vault secret path must contain a path segment");
+        }
         return cleanMount + (version == VaultKvVersion.KV2 ? "/data/" : "/") + cleanPath;
     }
 
