@@ -18,12 +18,22 @@ public final class RabbitMqClient implements AutoCloseable {
             throw new IllegalArgumentException("endpoint must not be null");
         }
 
+        String scheme = endpoint.scheme();
+        if (scheme != null && !scheme.equalsIgnoreCase("amqp") && !scheme.equalsIgnoreCase("amqps")) {
+            throw new IllegalArgumentException("RabbitMQ endpoint scheme must be amqp or amqps");
+        }
+
         factory = new ConnectionFactory();
         factory.setHost(endpoint.host());
         factory.setPort(endpoint.portOr(
-                "amqps".equalsIgnoreCase(endpoint.scheme()) ? 5671 : 5672));
+                "amqps".equalsIgnoreCase(scheme) ? 5671 : 5672));
+        factory.setConnectionTimeout(10_000);
+        factory.setHandshakeTimeout(10_000);
+        factory.setRequestedHeartbeat(30);
+        factory.setAutomaticRecoveryEnabled(true);
+        factory.setTopologyRecoveryEnabled(true);
 
-        if ("amqps".equalsIgnoreCase(endpoint.scheme())) {
+        if ("amqps".equalsIgnoreCase(scheme)) {
             try {
                 factory.useSslProtocol();
             } catch (Exception e) {
@@ -53,7 +63,7 @@ public final class RabbitMqClient implements AutoCloseable {
         }
     }
 
-    public boolean isConnected() {
+    public synchronized boolean isConnected() {
         return connection != null && connection.isOpen();
     }
 
@@ -64,6 +74,8 @@ public final class RabbitMqClient implements AutoCloseable {
                 connection.close();
             } catch (Exception ignored) {
                 // Best-effort cleanup.
+            } finally {
+                connection = null;
             }
         }
     }
