@@ -6,6 +6,7 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Locale;
 import java.util.Properties;
 
 public final class EnvironmentConfigLoader implements ConfigLoader {
@@ -22,6 +23,9 @@ public final class EnvironmentConfigLoader implements ConfigLoader {
     public FrameworkConfig load() {
         Properties properties = new Properties();
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        if (classLoader == null) {
+            classLoader = EnvironmentConfigLoader.class.getClassLoader();
+        }
         try {
             Enumeration<URL> resources = classLoader.getResources(resourceName);
             while (resources.hasMoreElements()) {
@@ -76,7 +80,7 @@ public final class EnvironmentConfigLoader implements ConfigLoader {
     private static String toEnvironmentName(String propertyKey) {
         return propertyKey.replace('.', '_')
                 .replace('-', '_')
-                .toUpperCase();
+                .toUpperCase(Locale.ROOT);
     }
 
     private static String value(Map<String, String> values, String key, String fallback) {
