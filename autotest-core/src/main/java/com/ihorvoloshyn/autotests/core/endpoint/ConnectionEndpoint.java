@@ -1,6 +1,7 @@
 package com.ihorvoloshyn.autotests.core.endpoint;
 
 import java.net.URI;
+import java.util.Locale;
 
 public record ConnectionEndpoint(String scheme, String host, Integer port, String path) {
     public ConnectionEndpoint {
@@ -10,7 +11,7 @@ public record ConnectionEndpoint(String scheme, String host, Integer port, Strin
         if (port != null && (port < 1 || port > 65535)) {
             throw new IllegalArgumentException("port must be between 1 and 65535");
         }
-        scheme = scheme == null || scheme.isBlank() ? null : scheme.toLowerCase();
+        scheme = scheme == null || scheme.isBlank() ? null : scheme.toLowerCase(Locale.ROOT);
         path = path == null || path.isBlank() ? null : path;
     }
 
