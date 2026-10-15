@@ -2,7 +2,7 @@ package com.ihorvoloshyn.autotests.junit;
 
 import com.ihorvoloshyn.autotests.connectors.HealthCheckFactory;
 import com.ihorvoloshyn.autotests.connectors.HealthCheckRunner;
-import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
+import com.ihorvoloshyn.autotests.core.config.EnvironmentConfigLoader;
 import com.ihorvoloshyn.autotests.health.HealthRunOptions;
 import com.ihorvoloshyn.autotests.health.HealthRunResult;
 import com.ihorvoloshyn.autotests.reporting.AllureConnectionHealthReporter;
@@ -31,7 +31,7 @@ public final class HealthCheckExtension implements BeforeAllCallback {
      * This constructor also allows usage with JUnit 5 @ExtendWith.
      */
     public HealthCheckExtension() {
-        this(new HealthCheckRunner(new HealthCheckFactory(FrameworkConfig.defaults())));
+        this(new HealthCheckRunner(new HealthCheckFactory(new EnvironmentConfigLoader().load())));
     }
 
     public HealthCheckExtension(HealthCheckRunner runner) {
