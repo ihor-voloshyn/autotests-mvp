@@ -1,5 +1,6 @@
 package com.ihorvoloshyn.autotests.rest;
 
+import com.ihorvoloshyn.autotests.core.config.Configuration;
 import com.ihorvoloshyn.autotests.core.config.Credentials;
 import com.ihorvoloshyn.autotests.core.endpoint.ConnectionEndpoint;
 import com.ihorvoloshyn.autotests.core.endpoint.EndpointResolver;
@@ -38,11 +39,13 @@ public class RestClient {
     }
 
     private io.restassured.response.Response request(String path, Map<String, ?> queryParams) {
+        RestTimeouts timeouts = RestTimeouts.from(Configuration.get());
         RequestSpecification request = RestAssured.given()
                 .config(RestAssuredConfig.config().httpClient(
                         HttpClientConfig.httpClientConfig()
-                                .setParam("http.connection.timeout", 5_000)
-                                .setParam("http.socket.timeout", 10_000)))
+                                .setParam("http.conn-manager.timeout", timeouts.connectionRequestMillis())
+                                .setParam("http.connection.timeout", timeouts.connectMillis())
+                                .setParam("http.socket.timeout", timeouts.responseMillis())))
                 .baseUri(endpoint.scheme() + "://" + endpoint.authority());
 
         if (endpoint.path() != null && !endpoint.path().isBlank()) {
