@@ -61,6 +61,22 @@ class CamundaClientTest {
     }
 
     @Test
+    void encodesProcessInstanceIdAsSinglePathSegment() throws IOException {
+        server = startServer(exchange -> {
+            String path = exchange.getRequestURI().getRawPath();
+            assertTrue(path.startsWith("/engine-rest/process-instance/"));
+            String segment = path.substring("/engine-rest/process-instance/".length());
+            assertEquals("instance id+1", URLDecoder.decode(segment, StandardCharsets.UTF_8));
+            exchange.sendResponseHeaders(200, -1);
+            exchange.close();
+        });
+
+        var response = new CamundaClient(baseUrl()).getProcessInstance("instance id+1");
+
+        assertEquals(200, response.statusCode());
+    }
+
+    @Test
     void rejectsEndpointWithoutScheme() {
         assertThrows(IllegalArgumentException.class, () -> new CamundaClient("camunda.local:8143"));
     }
