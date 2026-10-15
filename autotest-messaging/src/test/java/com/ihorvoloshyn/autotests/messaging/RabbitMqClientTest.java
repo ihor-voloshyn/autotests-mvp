@@ -72,6 +72,27 @@ class RabbitMqClientTest {
                 () -> new RabbitMqClient((String) null, "user", "password", "/"));
     }
 
+    @Test
+    void configuresFiniteConnectionTimeoutsAndHeartbeat() throws Exception {
+        RabbitMqClient client = new RabbitMqClient("rabbit.example.com", null, null, "/");
+        try {
+            ConnectionFactory factory = connectionFactory(client);
+            assertEquals(10_000, factory.getConnectionTimeout());
+            assertEquals(10_000, factory.getHandshakeTimeout());
+            assertEquals(30, factory.getRequestedHeartbeat());
+            assertTrue(factory.isAutomaticRecoveryEnabled());
+            assertTrue(factory.isTopologyRecoveryEnabled());
+        } finally {
+            client.close();
+        }
+    }
+
+    @Test
+    void rejectsUnsupportedEndpointScheme() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new RabbitMqClient("https://rabbit.example.com", null, null, "/"));
+    }
+
     private static ConnectionFactory connectionFactory(RabbitMqClient client) throws Exception {
         Field field = RabbitMqClient.class.getDeclaredField("factory");
         field.setAccessible(true);
