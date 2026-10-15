@@ -586,3 +586,22 @@ The framework still keeps health checks generic and independent from reporting/b
 - CI runs are currently in progress for the latest commits; final green verification is pending.
 
 The framework remains generic: no project-specific endpoints, process keys, database tables or business scenarios were introduced.
+
+## 2026-10-15 — Configuration loading and health-check hardening
+
+- The no-argument `HealthCheckExtension` now loads configuration through `EnvironmentConfigLoader` rather than an empty defaults map.
+- `EnvironmentConfigLoader` now merges all classpath resources named `application.properties`; the first resource wins for duplicate keys, allowing consuming applications to override library defaults while retaining missing defaults.
+- Added a layered-resource test fixture and assertions proving that a test/application overlay and framework defaults are both loaded.
+- Hardened classloader fallback and made environment-variable name conversion locale-independent.
+- Vault health-check API paths now account for the configured mount and KV version: KV1 uses `<mount>/<path>`, KV2 uses `<mount>/data/<path>`.
+- Added unit tests for KV1 and KV2 path construction.
+- Commits:
+  - `8ca6a447032ee8883621ea5d96edf193d677b8ad` — load application configuration in default JUnit extension;
+  - `cb5216699bde669f42ca562c4edbee65d56ac870` — build Vault health-check path;
+  - `cdf8f6bdd3bf4ae3d82472ff8cf8537240eb4b6b` — extract Vault path resolver;
+  - `648cf27931a7fad6a4c44474204df3c5ea9ec793` — add KV1/KV2 tests;
+  - `b5219fb9c40de82b96aac5803c28d1a4a7ef0223` — merge configuration resources;
+  - `d3e66b52a322f99fa170a45e7d756f10d22b3326` — classloader/locale hardening;
+  - `157452759b2db752e7c4f6e78949ce61767be761` — add overlay test fixture;
+  - `7f9ca2f96f2d27433a92077e3bb918f85623cec6` — test layered configuration loading.
+- CI status for the latest commit is not exposed by the current status/workflow lookup; the build must not be treated as confirmed green until a run is observed.
