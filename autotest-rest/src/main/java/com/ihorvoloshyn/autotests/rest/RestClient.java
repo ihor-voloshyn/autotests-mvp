@@ -4,6 +4,8 @@ import com.ihorvoloshyn.autotests.core.config.Credentials;
 import com.ihorvoloshyn.autotests.core.endpoint.ConnectionEndpoint;
 import com.ihorvoloshyn.autotests.core.endpoint.EndpointResolver;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
 
 import java.util.Map;
@@ -37,6 +39,10 @@ public class RestClient {
 
     private io.restassured.response.Response request(String path, Map<String, ?> queryParams) {
         RequestSpecification request = RestAssured.given()
+                .config(RestAssuredConfig.config().httpClient(
+                        HttpClientConfig.httpClientConfig()
+                                .setParam("http.connection.timeout", 5_000)
+                                .setParam("http.socket.timeout", 10_000)))
                 .baseUri(endpoint.scheme() + "://" + endpoint.authority());
 
         if (endpoint.path() != null && !endpoint.path().isBlank()) {
