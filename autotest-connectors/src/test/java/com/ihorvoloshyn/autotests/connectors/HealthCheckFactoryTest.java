@@ -2,6 +2,7 @@ package com.ihorvoloshyn.autotests.connectors;
 
 import com.ihorvoloshyn.autotests.core.config.Environment;
 import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
+import com.ihorvoloshyn.autotests.vault.VaultKvVersion;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -63,6 +64,18 @@ class HealthCheckFactoryTest {
 
         assertThrows(IllegalStateException.class,
                 () -> new HealthCheckFactory(config).createChecks());
+    }
+
+    @Test
+    void buildsVaultKv2ApiPathFromMountAndSecretPath() {
+        assertEquals("secret/data/health/check",
+                HealthCheckFactory.vaultApiPath("/secret/", "/health/check", VaultKvVersion.KV2));
+    }
+
+    @Test
+    void buildsVaultKv1ApiPathFromMountAndSecretPath() {
+        assertEquals("secret/health/check",
+                HealthCheckFactory.vaultApiPath("secret", "health/check", VaultKvVersion.KV1));
     }
 
     @Test
