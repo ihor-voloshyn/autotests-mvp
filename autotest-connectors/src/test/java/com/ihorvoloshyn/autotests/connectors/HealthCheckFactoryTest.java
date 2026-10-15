@@ -79,6 +79,18 @@ class HealthCheckFactoryTest {
     }
 
     @Test
+    void rejectsVaultMountThatContainsOnlySlashes() {
+        assertThrows(IllegalArgumentException.class,
+                () -> HealthCheckFactory.vaultApiPath("///", "health/check", VaultKvVersion.KV2));
+    }
+
+    @Test
+    void rejectsVaultSecretPathThatContainsOnlySlashes() {
+        assertThrows(IllegalArgumentException.class,
+                () -> HealthCheckFactory.vaultApiPath("secret", "///", VaultKvVersion.KV1));
+    }
+
+    @Test
     void rejectsUnsupportedVaultKvVersion() {
         FrameworkConfig config = config(Map.of(
                 "health.vault.url", "http://localhost:18200",
