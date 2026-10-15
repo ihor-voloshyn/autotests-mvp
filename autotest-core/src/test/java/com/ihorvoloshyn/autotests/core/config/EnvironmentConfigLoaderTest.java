@@ -18,6 +18,8 @@ class EnvironmentConfigLoaderTest {
         assertTrue(config.hasProperty("test.environment"));
         assertTrue(config.hasProperty("service.base-url"));
         assertTrue(config.hasProperty("vault.url"));
+        assertEquals("loaded", config.property("config.loader.test-overlay", null));
+        assertEquals("http://localhost", config.property("service.base-url", null));
     }
 
     @Test
