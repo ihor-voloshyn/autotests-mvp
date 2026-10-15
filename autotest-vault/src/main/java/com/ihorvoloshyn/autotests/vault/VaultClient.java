@@ -10,7 +10,9 @@ import java.net.http.*;
 import java.util.Map;
 
 public class VaultClient {
-    private final HttpClient httpClient = HttpClient.newHttpClient();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(java.time.Duration.ofSeconds(5))
+            .build();
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final ConnectionEndpoint endpoint;
     private final VaultToken token;
@@ -41,11 +43,12 @@ public class VaultClient {
     }
 
     public Map<String,Object> readData(String mount, String path, VaultKvVersion version) {
-        if (mount == null || mount.isBlank()) throw new IllegalArgumentException("mount must not be blank");
-        if (path == null || path.isBlank()) throw new IllegalArgumentException("path must not be blank");
+        if (version == null) throw new IllegalArgumentException("Vault KV version must not be null");
+        String cleanMount = cleanPathSegment(mount, "mount");
+        String cleanPath = cleanPathSegment(path, "path");
         String p = switch (version) {
-            case KV1 -> trim(mount) + "/" + trim(path);
-            case KV2 -> trim(mount) + "/data/" + trim(path);
+            case KV1 -> cleanMount + "/" + cleanPath;
+            case KV2 -> cleanMount + "/data/" + cleanPath;
         };
         Map<String,Object> response = get(p);
         if (version == VaultKvVersion.KV1) return extractMap(response.get("data"), "Vault KV1 response");
@@ -56,6 +59,7 @@ public class VaultClient {
         try {
             URI uri = URI.create(endpoint.toUri().toString().replaceAll("/+$", "") + "/v1/" + trimLeading(path));
             HttpRequest request = HttpRequest.newBuilder(uri)
+                    .timeout(java.time.Duration.ofSeconds(10))
                     .header("X-Vault-Token", token.value())
                     .header("Accept", "application/json")
                     .GET()
@@ -79,6 +83,16 @@ public class VaultClient {
         return (Map<String,Object>) value;
     }
 
-    private static String trim(String v) { return v.replaceAll("^/+|/+$", ""); }
+    private static String cleanPathSegment(String value, String name) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException("Vault " + name + " must not be blank");
+        }
+        String clean = value.trim().replaceAll("^/+|/+$", "");
+        if (clean.isEmpty()) {
+            throw new IllegalArgumentException("Vault " + name + " must contain a path segment");
+        }
+        return clean;
+    }
+
     private static String trimLeading(String v) { return v.replaceAll("^/+", ""); }
 }
