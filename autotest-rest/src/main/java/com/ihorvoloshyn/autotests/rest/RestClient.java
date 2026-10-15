@@ -44,8 +44,8 @@ public class RestClient {
                 .config(RestAssuredConfig.config().httpClient(
                         HttpClientConfig.httpClientConfig()
                                 .setParam("http.conn-manager.timeout", (long) timeouts.connectionRequestMillis())
-                                .setParam("http.connection.timeout", (long) timeouts.connectMillis())
-                                .setParam("http.socket.timeout", (long) timeouts.responseMillis())))
+                                .setParameter("http.connection.timeout", timeouts.connectMillis())
+                                .setParameter("http.socket.timeout", timeouts.responseMillis())))
                 .baseUri(endpoint.scheme() + "://" + endpoint.authority());
 
         if (endpoint.path() != null && !endpoint.path().isBlank()) {
