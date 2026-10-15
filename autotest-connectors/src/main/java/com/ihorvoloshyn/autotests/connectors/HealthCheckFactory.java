@@ -64,9 +64,7 @@ public final class HealthCheckFactory {
         if (url.isBlank() || path.isBlank()) return;
 
         VaultKvVersion version = parseKvVersion(valueOr("health.vault.kv-version", "KV2"));
-        String mount = trimSlashes(valueOr("health.vault.mount", "secret"));
-        String secretPath = trimLeadingSlashes(path);
-        String apiPath = mount + (version == VaultKvVersion.KV2 ? "/data/" : "/") + secretPath;
+        String apiPath = vaultApiPath(valueOr("health.vault.mount", "secret"), path, version);
 
         checks.add(new VaultConnectionCheck(
                 () -> connections.vault("health.vault"),
@@ -136,6 +134,21 @@ public final class HealthCheckFactory {
         } catch (Exception e) {
             throw new IllegalArgumentException("Unsupported Vault KV version: " + value, e);
         }
+    }
+
+    static String vaultApiPath(String mount, String path, VaultKvVersion version) {
+        if (mount == null || mount.isBlank()) {
+            throw new IllegalArgumentException("Vault mount must not be blank");
+        }
+        if (path == null || path.isBlank()) {
+            throw new IllegalArgumentException("Vault secret path must not be blank");
+        }
+        if (version == null) {
+            throw new IllegalArgumentException("Vault KV version must not be null");
+        }
+        String cleanMount = trimSlashes(mount);
+        String cleanPath = trimLeadingSlashes(path);
+        return cleanMount + (version == VaultKvVersion.KV2 ? "/data/" : "/") + cleanPath;
     }
 
     private static String trimSlashes(String value) {
