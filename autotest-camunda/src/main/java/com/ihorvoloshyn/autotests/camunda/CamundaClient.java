@@ -3,6 +3,8 @@ package com.ihorvoloshyn.autotests.camunda;
 import com.ihorvoloshyn.autotests.core.endpoint.ConnectionEndpoint;
 import com.ihorvoloshyn.autotests.core.endpoint.EndpointResolver;
 import io.restassured.RestAssured;
+import io.restassured.config.HttpClientConfig;
+import io.restassured.config.RestAssuredConfig;
 import io.restassured.specification.RequestSpecification;
 import io.restassured.response.Response;
 
@@ -37,10 +39,16 @@ public class CamundaClient {
     }
 
     private RequestSpecification request() {
-        return RestAssured.given().baseUri(baseUrl());
+        return RestAssured.given()
+                .config(RestAssuredConfig.config().httpClient(
+                        HttpClientConfig.httpClientConfig()
+                                .setParam("http.connection.timeout", 5_000)
+                                .setParam("http.socket.timeout", 10_000)))
+                .baseUri(baseUrl());
     }
 
     public Response getProcessInstance(String instanceId) {
-        return get("/engine-rest/process-instance/" + instanceId);
+        return request().pathParam("instanceId", instanceId)
+                .get("/engine-rest/process-instance/{instanceId}");
     }
 }
