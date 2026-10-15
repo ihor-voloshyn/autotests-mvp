@@ -2,11 +2,14 @@ package com.ihorvoloshyn.autotests.health;
 
 import java.net.URI;
 import java.net.http.*;
+import java.time.Duration;
 
 public final class HttpConnectionCheck implements ConnectionCheck {
     private final String name;
     private final String url;
-    private final HttpClient client = HttpClient.newHttpClient();
+    private final HttpClient client = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .build();
 
     public HttpConnectionCheck(String name, String url) {
         this.name = require(name, "name");
@@ -17,6 +20,7 @@ public final class HttpConnectionCheck implements ConnectionCheck {
         long start = System.nanoTime();
         try {
             HttpRequest request = HttpRequest.newBuilder(URI.create(url))
+                    .timeout(Duration.ofSeconds(10))
                     .GET().build();
             int status = client.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
             return result(status, start);
