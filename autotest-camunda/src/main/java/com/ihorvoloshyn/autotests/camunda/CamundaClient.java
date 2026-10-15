@@ -3,6 +3,7 @@ package com.ihorvoloshyn.autotests.camunda;
 import com.ihorvoloshyn.autotests.core.endpoint.ConnectionEndpoint;
 import com.ihorvoloshyn.autotests.core.endpoint.EndpointResolver;
 import io.restassured.RestAssured;
+import io.restassured.specification.RequestSpecification;
 import io.restassured.response.Response;
 
 public class CamundaClient {
@@ -24,15 +25,19 @@ public class CamundaClient {
     }
 
     public Response get(String path) {
-        return RestAssured.given().baseUri(baseUrl()).get(path);
+        return request().get(path == null ? "" : path);
     }
 
     public Response getProcessDefinitions(String key) {
-        return get("/engine-rest/process-definition?key=" + key);
+        return request().queryParam("key", key).get("/engine-rest/process-definition");
     }
 
     public Response getProcessInstances(String processDefinitionKey) {
-        return get("/engine-rest/process-instance?processDefinitionKey=" + processDefinitionKey);
+        return request().queryParam("processDefinitionKey", processDefinitionKey).get("/engine-rest/process-instance");
+    }
+
+    private RequestSpecification request() {
+        return RestAssured.given().baseUri(baseUrl());
     }
 
     public Response getProcessInstance(String instanceId) {
