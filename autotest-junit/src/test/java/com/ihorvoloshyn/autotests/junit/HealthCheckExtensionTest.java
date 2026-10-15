@@ -4,11 +4,13 @@ import com.ihorvoloshyn.autotests.connectors.HealthCheckFactory;
 import com.ihorvoloshyn.autotests.connectors.HealthCheckRunner;
 import com.ihorvoloshyn.autotests.core.config.FrameworkConfig;
 import com.ihorvoloshyn.autotests.health.HealthRunOptions;
+import com.ihorvoloshyn.autotests.reporting.AllureConnectionHealthReporter;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class HealthCheckExtensionTest {
 
@@ -26,7 +28,7 @@ class HealthCheckExtensionTest {
                 runner,
                 HealthRunOptions.sequential(),
                 HealthCheckExtension.FailurePolicy.REPORT_ONLY,
-                new com.ihorvoloshyn.autotests.reporting.AllureConnectionHealthReporter());
+                new AllureConnectionHealthReporter());
 
         assertDoesNotThrow(() -> extension.beforeAll(null));
     }
@@ -41,6 +43,6 @@ class HealthCheckExtensionTest {
         assertEquals(0, result.total());
         assertEquals(0, result.failed());
         assertEquals(0, result.successful());
-        assertEquals(true, result.success());
+        assertTrue(result.success());
     }
 }
