@@ -2,6 +2,8 @@ package com.ihorvoloshyn.autotests.core.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URL;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
@@ -19,11 +21,24 @@ public final class EnvironmentConfigLoader implements ConfigLoader {
     @Override
     public FrameworkConfig load() {
         Properties properties = new Properties();
-        try (InputStream input = Thread.currentThread().getContextClassLoader()
-                .getResourceAsStream(resourceName)) {
-            if (input != null) properties.load(input);
+        ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+        try {
+            Enumeration<URL> resources = classLoader.getResources(resourceName);
+            while (resources.hasMoreElements()) {
+                Properties resourceProperties = new Properties();
+                URL resource = resources.nextElement();
+                try (InputStream input = resource.openStream()) {
+                    resourceProperties.load(input);
+                }
+                // The first resource on the application classpath wins. This lets
+                // consumer-project configuration override framework defaults while
+                // still filling in keys absent from the consumer configuration.
+                for (String key : resourceProperties.stringPropertyNames()) {
+                    properties.putIfAbsent(key, resourceProperties.getProperty(key));
+                }
+            }
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot load configuration: " + resourceName, e);
+            throw new IllegalStateException("Cannot load configuration resources: " + resourceName, e);
         }
 
         Map<String, String> values = new HashMap<>();
