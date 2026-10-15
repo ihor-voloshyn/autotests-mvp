@@ -605,3 +605,13 @@ The framework remains generic: no project-specific endpoints, process keys, data
   - `157452759b2db752e7c4f6e78949ce61767be761` — add overlay test fixture;
   - `7f9ca2f96f2d27433a92077e3bb918f85623cec6` — test layered configuration loading.
 - CI status for the latest commit is not exposed by the current status/workflow lookup; the build must not be treated as confirmed green until a run is observed.
+
+## 2026-10-15 — Additional Vault path validation
+
+- Hardened `HealthCheckFactory.vaultApiPath` to reject mount names and secret paths that become empty after trimming slashes.
+- Made Vault KV version parsing locale-independent using `Locale.ROOT`.
+- Added tests for slash-only mount and secret-path inputs.
+- Commits:
+  - `f254e9b63af825d55d93ad05458a1e77303fca32` — harden Vault health-check path validation;
+  - `a6cd38f64697456f227c5abff266d3ceaa59b0e4` — test invalid Vault health-check paths.
+- The main `VaultClient` path validation is still under review; Maven/CI verification remains unconfirmed.
