@@ -14,6 +14,7 @@ import java.util.Map;
 public class RestClient {
     private final ConnectionEndpoint endpoint;
     private final Credentials credentials;
+    private final RestTimeouts timeouts;
 
     public RestClient(String baseUrl) {
         this(EndpointResolver.resolve(baseUrl));
@@ -24,10 +25,16 @@ public class RestClient {
     }
 
     public RestClient(ConnectionEndpoint endpoint, Credentials credentials) {
+        this(endpoint, credentials, RestTimeouts.from(Configuration.get()));
+    }
+
+    public RestClient(ConnectionEndpoint endpoint, Credentials credentials, RestTimeouts timeouts) {
         if (endpoint == null) throw new IllegalArgumentException("endpoint must not be null");
         if (endpoint.scheme() == null) throw new IllegalArgumentException("REST endpoint must include a URL scheme");
         this.endpoint = endpoint.withDefaultPort(defaultPort(endpoint.scheme()));
         this.credentials = credentials == null ? Credentials.empty() : credentials;
+        if (timeouts == null) throw new IllegalArgumentException("timeouts must not be null");
+        this.timeouts = timeouts;
     }
 
     public io.restassured.response.Response get(String path) {
@@ -39,7 +46,6 @@ public class RestClient {
     }
 
     private io.restassured.response.Response request(String path, Map<String, ?> queryParams) {
-        RestTimeouts timeouts = RestTimeouts.from(Configuration.get());
         RequestSpecification request = RestAssured.given()
                 .config(RestAssuredConfig.config().httpClient(
                         HttpClientConfig.httpClientConfig()
