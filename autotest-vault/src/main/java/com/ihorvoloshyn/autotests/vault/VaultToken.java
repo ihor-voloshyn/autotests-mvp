@@ -7,4 +7,9 @@ public record VaultToken(String value) {
             throw new IllegalArgumentException("Vault token must not be blank");
         }
     }
+
+    @Override
+    public String toString() {
+        return "VaultToken[value=<redacted>]";
+    }
 }
