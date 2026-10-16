@@ -1,6 +1,9 @@
 package com.ihorvoloshyn.autotests.infrastructure;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -15,24 +18,43 @@ public class CommandExecutor {
             throw new IllegalArgumentException("timeout must be positive");
         }
 
+        Path outputFile = null;
+        Process process = null;
         try {
-            Process process = new ProcessBuilder(command)
+            outputFile = Files.createTempFile("autotest-command-", ".log");
+            process = new ProcessBuilder(command)
                     .redirectErrorStream(true)
+                    .redirectOutput(outputFile.toFile())
                     .start();
 
             boolean completed = process.waitFor(timeout.toMillis(), TimeUnit.MILLISECONDS);
             if (!completed) {
                 process.destroyForcibly();
-                return new CommandResult(-1, "", "Command timed out: " + String.join(" ", command));
+                process.waitFor();
+                return new CommandResult(
+                        -1,
+                        Files.readString(outputFile, StandardCharsets.UTF_8),
+                        "Command timed out");
             }
 
-            String output = new String(process.getInputStream().readAllBytes());
+            String output = Files.readString(outputFile, StandardCharsets.UTF_8);
             return new CommandResult(process.exitValue(), output, "");
         } catch (IOException e) {
-            throw new IllegalStateException("Cannot execute command: " + command, e);
+            throw new IllegalStateException("Cannot execute command", e);
         } catch (InterruptedException e) {
+            if (process != null) {
+                process.destroyForcibly();
+            }
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Command execution interrupted", e);
+        } finally {
+            if (outputFile != null) {
+                try {
+                    Files.deleteIfExists(outputFile);
+                } catch (IOException ignored) {
+                    // Best-effort cleanup; do not mask the command result or original failure.
+                }
+            }
         }
     }
 
