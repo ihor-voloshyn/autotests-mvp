@@ -16,6 +16,11 @@
     </dependency>
     <dependency>
       <groupId>com.ihorvoloshyn.autotests</groupId>
+      <artifactId>autotest-rest</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.ihorvoloshyn.autotests</groupId>
       <artifactId>autotest-db</artifactId>
       <version>${project.version}</version>
     </dependency>
