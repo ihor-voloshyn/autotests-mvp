@@ -25,19 +25,32 @@ public class CamundaProcessWaiter {
         if (instanceId == null || instanceId.isBlank()) {
             throw new IllegalArgumentException("instanceId must not be blank");
         }
-        if (condition == null || timeout == null || pollInterval == null) {
-            throw new IllegalArgumentException("condition, timeout and pollInterval are required");
+        if (condition == null) {
+            throw new IllegalArgumentException("condition must not be null");
+        }
+        if (timeout == null || timeout.isZero() || timeout.isNegative()) {
+            throw new IllegalArgumentException("timeout must be positive");
+        }
+        if (pollInterval == null || pollInterval.isZero() || pollInterval.isNegative()) {
+            throw new IllegalArgumentException("pollInterval must be positive");
         }
 
-        long deadline = System.nanoTime() + timeout.toNanos();
+        long timeoutNanos = timeout.toNanos();
+        long pollNanos = pollInterval.toNanos();
+        long start = System.nanoTime();
         Response last = null;
 
-        while (System.nanoTime() < deadline) {
+        while (System.nanoTime() - start < timeoutNanos) {
             last = client.getInstance(instanceId);
             if (condition.test(last)) {
                 return last;
             }
-            sleep(pollInterval);
+
+            long elapsed = System.nanoTime() - start;
+            long remaining = timeoutNanos - elapsed;
+            if (remaining > 0) {
+                sleepNanos(Math.min(pollNanos, remaining));
+            }
         }
 
         throw new IllegalStateException(
@@ -58,9 +71,11 @@ public class CamundaProcessWaiter {
                 pollInterval);
     }
 
-    private static void sleep(Duration duration) {
+    private static void sleepNanos(long nanos) {
         try {
-            Thread.sleep(duration.toMillis());
+            long millis = nanos / 1_000_000;
+            int extraNanos = (int) (nanos % 1_000_000);
+            Thread.sleep(millis, extraNanos);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new IllegalStateException("Camunda wait interrupted", e);
