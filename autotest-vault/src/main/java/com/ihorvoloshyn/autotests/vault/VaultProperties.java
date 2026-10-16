@@ -18,4 +18,12 @@ public record VaultProperties(
         }
         password = password == null ? "" : password;
     }
+
+    @Override
+    public String toString() {
+        return "VaultProperties[url=" + url
+                + ", authPath=" + authPath
+                + ", username=" + username
+                + ", password=<redacted>]";
+    }
 }
