@@ -40,7 +40,7 @@ public final class ConnectionFactory {
     public CamundaClient camunda() {
         String url = config.property("camunda.url",
                 config.property("camunda.base-url", config.baseUrl()));
-        return new CamundaClient(url);
+        return new CamundaClient(EndpointResolver.resolve(url), RestTimeouts.from(config));
     }
 
     public RestClient rest(String prefix) {
