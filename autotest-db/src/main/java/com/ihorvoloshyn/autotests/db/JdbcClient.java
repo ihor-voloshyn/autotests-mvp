@@ -47,7 +47,12 @@ public class JdbcClient implements AutoCloseable, DatabaseHealthClient {
                         e.addSuppressed(closeError);
                     }
                 }
-                throw new IllegalStateException("Cannot connect to database: " + jdbcUrl, e);
+                SQLException safeCause = new SQLException(
+                        "Database connection failed (SQLState=" + e.getSQLState()
+                                + ", vendorCode=" + e.getErrorCode() + ")",
+                        e.getSQLState(),
+                        e.getErrorCode());
+                throw new IllegalStateException("Cannot connect to database", safeCause);
             }
         }
     }
