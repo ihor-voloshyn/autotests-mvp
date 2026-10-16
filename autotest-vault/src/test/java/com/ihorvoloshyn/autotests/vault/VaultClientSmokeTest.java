@@ -20,4 +20,13 @@ class VaultClientSmokeTest {
         org.junit.jupiter.api.Assertions.assertFalse(token.toString().contains("sample-token-value"));
         org.junit.jupiter.api.Assertions.assertTrue(token.toString().contains("<redacted>"));
     }
+
+    @Test
+    void vaultPropertiesToStringRedactsPassword() {
+        VaultProperties properties = new VaultProperties(
+                "https://vault.example.com", "auth/userpass/login", "service-user", "sample-value-123");
+
+        org.junit.jupiter.api.Assertions.assertFalse(properties.toString().contains("sample-value-123"));
+        org.junit.jupiter.api.Assertions.assertTrue(properties.toString().contains("<redacted>"));
+    }
 }
