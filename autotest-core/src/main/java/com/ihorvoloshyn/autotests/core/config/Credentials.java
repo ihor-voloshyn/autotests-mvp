@@ -13,4 +13,9 @@ public record Credentials(String username, String password) {
     public static Credentials empty() {
         return new Credentials("", "");
     }
+
+    @Override
+    public String toString() {
+        return "Credentials[username=" + username + ", password=<redacted>]";
+    }
 }
