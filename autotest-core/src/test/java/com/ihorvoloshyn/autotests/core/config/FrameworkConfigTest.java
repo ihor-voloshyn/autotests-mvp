@@ -53,4 +53,13 @@ class FrameworkConfigTest {
         assertThrows(UnsupportedOperationException.class,
                 () -> config.properties().put("other", "value"));
     }
+
+    @Test
+    void credentialsToStringRedactsPassword() {
+        var credentials = new Credentials("service-user", "sample-value-123");
+
+        assertTrue(credentials.toString().contains("service-user"));
+        assertFalse(credentials.toString().contains("sample-value-123"));
+        assertTrue(credentials.toString().contains("<redacted>"));
+    }
 }
