@@ -13,6 +13,7 @@ import com.ihorvoloshyn.autotests.db.JdbcClient;
 import com.ihorvoloshyn.autotests.infrastructure.ElkClient;
 import com.ihorvoloshyn.autotests.messaging.RabbitMqClient;
 import com.ihorvoloshyn.autotests.rest.RestClient;
+import com.ihorvoloshyn.autotests.rest.RestTimeouts;
 import com.ihorvoloshyn.autotests.soap.SoapClientFactory;
 import com.ihorvoloshyn.autotests.vault.AuthenticatedVaultClient;
 import com.ihorvoloshyn.autotests.vault.BasicAuthVaultAuthenticator;
@@ -32,7 +33,8 @@ public final class ConnectionFactory {
     }
 
     public RestClient rest() {
-        return new RestClient(config.baseUrl());
+        return new RestClient(EndpointResolver.resolve(config.baseUrl()),
+                com.ihorvoloshyn.autotests.core.config.Credentials.empty(), RestTimeouts.from(config));
     }
 
     public CamundaClient camunda() {
@@ -49,7 +51,7 @@ public final class ConnectionFactory {
         requirePrefix(prefix);
         requireSecrets(secrets);
         ServiceConfig service = ServiceConfig.from(config, prefix, prefix, secrets);
-        return new RestClient(service.endpoint(), service.credentials());
+        return new RestClient(service.endpoint(), service.credentials(), RestTimeouts.from(config));
     }
 
     public CamundaClient camunda(String prefix) {
