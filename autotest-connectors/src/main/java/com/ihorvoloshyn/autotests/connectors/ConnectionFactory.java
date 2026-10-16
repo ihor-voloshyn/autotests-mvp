@@ -34,7 +34,7 @@ public final class ConnectionFactory {
 
     public RestClient rest() {
         return new RestClient(EndpointResolver.resolve(config.baseUrl()),
-                com.ihorvoloshyn.autotests.core.config.Credentials.empty(), RestTimeouts.from(config));
+                Credentials.empty(), RestTimeouts.from(config));
     }
 
     public CamundaClient camunda() {
