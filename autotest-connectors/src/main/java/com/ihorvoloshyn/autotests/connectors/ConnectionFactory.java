@@ -56,7 +56,7 @@ public final class ConnectionFactory {
 
     public CamundaClient camunda(String prefix) {
         requirePrefix(prefix);
-        return new CamundaClient(ServiceConfig.from(config, prefix, prefix).endpoint());
+        return new CamundaClient(ServiceConfig.from(config, prefix, prefix).endpoint(), RestTimeouts.from(config));
     }
 
     public ElkClient elk(String prefix) {
